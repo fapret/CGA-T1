@@ -1,5 +1,5 @@
 # ======================================================================== #
-# Copyright 2019-2022 Ingo Wald                                            #
+# Copyright 2019 Ingo Wald                                                 #
 #                                                                          #
 # Licensed under the Apache License, Version 2.0 (the "License");          #
 # you may not use this file except in compliance with the License.         #
@@ -14,12 +14,18 @@
 # limitations under the License.                                           #
 # ======================================================================== #
 
-#file(GLOB samples RELATIVE ${CMAKE_CURRENT_LIST_DIR} "int??-*")
+embed_ptx(
+  OUTPUT_TARGET
+    photon-mapping-ptx
+  PTX_LINK_LIBRARIES
+    owl::owl
+  SOURCES
+    deviceCode.cu
+)
 
-foreach(sample IN ITEMS
-	photon-mapping
-    )
-  add_subdirectory(${sample})
-endforeach()
-
-
+add_executable(photon-mapping hostCode.cpp)
+target_link_libraries(photon-mapping
+  PRIVATE
+    photon-mapping-ptx
+    owl_viewer
+)
