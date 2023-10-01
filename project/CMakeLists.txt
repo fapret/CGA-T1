@@ -9,15 +9,15 @@
 
 embed_ptx(
   OUTPUT_TARGET
-    CGA_Tarea1
+    CGA_Tarea1-ptx
   PTX_LINK_LIBRARIES
     owl::owl
   SOURCES
-    devicePrograms.cu
+    deviceCode.cu
 )
 
 add_executable(CGA_Tarea1
-  main.cpp
+  hostCode.cpp
 )
 
 target_link_libraries(CGA_Tarea1 PRIVATE CGA_Tarea1-ptx owl_viewer)

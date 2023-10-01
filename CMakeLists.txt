@@ -97,14 +97,14 @@ option(OWL_BUILD_SAMPLES "Build the Samples?" ON)
 add_compile_definitions(OWL_BUILDING_ALL_SAMPLES)
 option(OWL_BUILD_ADVANCED_TESTS "Build the *advanced* test-cases?" OFF)
 
-option(OWL_BUILD_PROJECT "Build the Child Project?" ON)
+option(OWL_BUILD_CHILD_PROJECT "Build the Child Project?" ON)
 
 add_subdirectory(3rdParty)
 
 # ------------------------------------------------------------------
 # Project
 # ------------------------------------------------------------------
-if (OWL_BUILD_PROJECT)
+if (OWL_BUILD_CHILD_PROJECT)
   add_subdirectory(project)
 endif()
 
