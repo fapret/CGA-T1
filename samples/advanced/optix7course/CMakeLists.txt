@@ -31,6 +31,7 @@ add_executable(adv_optix7course
   Model.cpp
   LaunchParams.h
   main.cpp
+  kdtree.h
 )
 
 target_link_libraries(adv_optix7course PRIVATE adv_optix7course-ptx owl_viewer)

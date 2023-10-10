@@ -19,6 +19,7 @@
 // our helper library for window handling
 #include "owlViewer/OWLViewer.h"
 #include <GL/gl.h>
+#include "kdtree.h"
 
 /*! \namespace osc - Optix Siggraph Course */
 namespace osc {
