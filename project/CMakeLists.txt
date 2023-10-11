@@ -13,11 +13,17 @@ embed_ptx(
   PTX_LINK_LIBRARIES
     owl::owl
   SOURCES
-    deviceCode.cu
+    devicePrograms.cu
 )
 
 add_executable(CGA_Tarea1
-  hostCode.cpp
+  SampleRenderer.h
+  SampleRenderer.cpp
+  Model.h
+  Model.cpp
+  LaunchParams.h
+  main.cpp
+  kdtree.h
 )
 
 target_link_libraries(CGA_Tarea1 PRIVATE CGA_Tarea1-ptx owl_viewer)
