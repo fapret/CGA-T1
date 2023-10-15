@@ -18,6 +18,8 @@
 
 #include "Model.h"
 #include "owl/owl.h"
+#include "kdtree.h"
+#include <array>
 
 namespace cga {
   using namespace owl;
@@ -33,6 +35,41 @@ namespace cga {
     vec3i *index;
     int    hasTexture;
     cudaTextureObject_t texture;
+  };
+
+
+  struct Photon {
+      static const int DIM = 3;
+      char p[4];
+      char phi, theta;
+      short flag;
+      double x;
+      double y;
+      double z;
+
+      double& operator[](int index) {
+          switch (index) {
+          case 0:
+              return x;
+          case 1:
+              return y;
+          case 2:
+              return z;
+          }
+          throw std::out_of_range("Index out of range");
+      };
+
+
+      __host__ __device__ Photon(double x, double y, double z, char p, char phi, char theta, short flag)
+      {
+          this->x = x;
+          this->y = y;
+          this->z = z;
+          *this->p = p;
+          this->phi = phi;
+          this->theta = theta;
+          this->flag = flag;
+      }
   };
   
   struct LaunchParams
