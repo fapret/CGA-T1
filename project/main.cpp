@@ -20,6 +20,7 @@
 #include "owlViewer/OWLViewer.h"
 #include <GL/gl.h>
 #include "kdtree.h"
+#include <array>
 
 /*! \namespace osc - Optix Siggraph Course */
 namespace cga {
@@ -93,7 +94,8 @@ namespace cga {
     
     SampleRenderer        sample;
   };
-  
+
+
   
   /*! main entry point to this example - initially optix, print hello
     world, then exit */
@@ -125,9 +127,16 @@ namespace cga {
                         /* at */model->bounds.center()-vec3f(0,400,0),
                         /* up */vec3f(0.f,1.f,0.f) };
 
+      
+
+      //std::vector<photon> points = { photon(1.0, 2.0, 3.0, 'asfc', 'a', 'b', 23), photon(3.0, 4.0, 3.0, 'asfc', 'a', 'b', 23), photon(5.0, 6.0, 3.0, 'asfc', 'a', 'b', 23)};
+      //char x = points[1].phi;
+
+      //kdt::KDTree<photon> kdtree(points);
+
       // some simple, hard-coded light ... obviously, only works for sponza
       const float light_size = 200.f;
-      QuadLight light = { /* origin */ vec3f(-1000-light_size,800,-light_size),
+      QuadLight light = { /* origin */ vec3f(-1293.07f, 154.681f, -0.7304f),
                           /* edge 1 */ vec3f(2.f*light_size,0,0),
                           /* edge 2 */ vec3f(0,0,2.f*light_size),
                           /* power */  vec3f(3000000.f) };
@@ -156,3 +165,4 @@ namespace cga {
   }
   
 } // ::osc
+

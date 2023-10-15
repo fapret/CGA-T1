@@ -38,6 +38,7 @@ namespace cga {
   struct PRD {
     Random random;
     vec3f  pixelColor;
+    bool   isPhoton;
     vec3f  pixelNormal;
     vec3f  pixelAlbedo;
   };
@@ -91,114 +92,119 @@ namespace cga {
     // ------------------------------------------------------------------
     // gather some basic hit information
     // ------------------------------------------------------------------
-    const int ix = optixGetLaunchIndex().x;
-    const int iy = optixGetLaunchIndex().y;
+    if (!prd.isPhoton) {
+        const int ix = optixGetLaunchIndex().x;
+        const int iy = optixGetLaunchIndex().y;
 
-    const int   primID = optixGetPrimitiveIndex();
-    const vec3i index  = sbtData.index[primID];
-    
-    const float u = optixGetTriangleBarycentrics().x;
-    const float v = optixGetTriangleBarycentrics().y;
+        const int   primID = optixGetPrimitiveIndex();
+        const vec3i index = sbtData.index[primID];
 
-    // ------------------------------------------------------------------
-    // compute normal, using either shading normal (if avail), or
-    // geometry normal (fallback)
-    // ------------------------------------------------------------------
-    const vec3f &A     = sbtData.vertex[index.x];
-    const vec3f &B     = sbtData.vertex[index.y];
-    const vec3f &C     = sbtData.vertex[index.z];
+        const float u = optixGetTriangleBarycentrics().x;
+        const float v = optixGetTriangleBarycentrics().y;
 
-    vec3f Ng = cross(B-A,C-A);
-    vec3f Ns = (sbtData.normal)
-      ? ((1.f-u-v) * sbtData.normal[index.x]
-         +       u * sbtData.normal[index.y]
-         +       v * sbtData.normal[index.z])
-      : Ng;
+        // ------------------------------------------------------------------
+        // compute normal, using either shading normal (if avail), or
+        // geometry normal (fallback)
+        // ------------------------------------------------------------------
+        const vec3f& A = sbtData.vertex[index.x];
+        const vec3f& B = sbtData.vertex[index.y];
+        const vec3f& C = sbtData.vertex[index.z];
 
-    // ------------------------------------------------------------------
-    // face-forward and normalize normals
-    // ------------------------------------------------------------------
-    const vec3f rayDir = optixGetWorldRayDirection();
-    
-    if (dot(rayDir,Ng) > 0.f) Ng = -Ng;
-    Ng = normalize(Ng);
-    
-    if (dot(Ng,Ns) < 0.f)
-      Ns -= 2.f*dot(Ng,Ns)*Ng;
-    Ns = normalize(Ns);
+        vec3f Ng = cross(B - A, C - A);
+        vec3f Ns = (sbtData.normal)
+            ? ((1.f - u - v) * sbtData.normal[index.x]
+                + u * sbtData.normal[index.y]
+                + v * sbtData.normal[index.z])
+            : Ng;
 
-    // ------------------------------------------------------------------
-    // compute diffuse material color, including diffuse texture, if
-    // available
-    // ------------------------------------------------------------------
-    vec3f diffuseColor = sbtData.color;
-    if (sbtData.hasTexture && sbtData.texcoord) {
-      const vec2f tc
-        = (1.f-u-v) * sbtData.texcoord[index.x]
-        +         u * sbtData.texcoord[index.y]
-        +         v * sbtData.texcoord[index.z];
-      
-      vec4f fromTexture = tex2D<float4>(sbtData.texture,tc.x,tc.y);
-      diffuseColor *= (vec3f)fromTexture;
+        // ------------------------------------------------------------------
+        // face-forward and normalize normals
+        // ------------------------------------------------------------------
+        const vec3f rayDir = optixGetWorldRayDirection();
+
+        if (dot(rayDir, Ng) > 0.f) Ng = -Ng;
+        Ng = normalize(Ng);
+
+        if (dot(Ng, Ns) < 0.f)
+            Ns -= 2.f * dot(Ng, Ns) * Ng;
+        Ns = normalize(Ns);
+
+        // ------------------------------------------------------------------
+        // compute diffuse material color, including diffuse texture, if
+        // available
+        // ------------------------------------------------------------------
+        vec3f diffuseColor = sbtData.color;
+        if (sbtData.hasTexture && sbtData.texcoord) {
+            const vec2f tc
+                = (1.f - u - v) * sbtData.texcoord[index.x]
+                + u * sbtData.texcoord[index.y]
+                + v * sbtData.texcoord[index.z];
+
+            vec4f fromTexture = tex2D<float4>(sbtData.texture, tc.x, tc.y);
+            diffuseColor *= (vec3f)fromTexture;
+        }
+
+        // start with some ambient term
+        vec3f pixelColor = (0.1f + 0.2f * fabsf(dot(Ns, rayDir))) * diffuseColor;
+
+        // ------------------------------------------------------------------
+        // compute shadow
+        // ------------------------------------------------------------------
+        const vec3f surfPos
+            = (1.f - u - v) * sbtData.vertex[index.x]
+            + u * sbtData.vertex[index.y]
+            + v * sbtData.vertex[index.z];
+
+        const int numLightSamples = NUM_LIGHT_SAMPLES;
+        for (int lightSampleID = 0; lightSampleID < numLightSamples; lightSampleID++) {
+            // produce random light sample
+            const vec3f lightPos
+                = optixLaunchParams.light.origin
+                + prd.random() * optixLaunchParams.light.du
+                + prd.random() * optixLaunchParams.light.dv;
+            vec3f lightDir = lightPos - surfPos;
+            float lightDist = length(lightDir);
+            lightDir = normalize(lightDir);
+
+            // trace shadow ray:
+            const float NdotL = dot(lightDir, Ns);
+            if (NdotL >= 0.f) {
+                vec3f lightVisibility = 0.f;
+                // the values we store the PRD pointer in:
+                uint32_t u0, u1;
+                packPointer(&lightVisibility, u0, u1);
+                optixTrace(optixLaunchParams.traversable,
+                    surfPos + 1e-3f * Ng,
+                    lightDir,
+                    1e-3f,      // tmin
+                    lightDist * (1.f - 1e-3f),  // tmax
+                    0.0f,       // rayTime
+                    OptixVisibilityMask(255),
+                    // For shadow rays: skip any/closest hit shaders and terminate on first
+                    // intersection with anything. The miss shader is used to mark if the
+                    // light was visible.
+                    OPTIX_RAY_FLAG_DISABLE_ANYHIT
+                    | OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT
+                    | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT,
+                    SHADOW_RAY_TYPE,            // SBT offset
+                    RAY_TYPE_COUNT,               // SBT stride
+                    SHADOW_RAY_TYPE,            // missSBTIndex 
+                    u0, u1);
+                pixelColor
+                    += lightVisibility
+                    * optixLaunchParams.light.power
+                    * diffuseColor
+                    * (NdotL / (lightDist * lightDist * numLightSamples));
+            }
+        }
+
+        prd.pixelNormal = Ns;
+        prd.pixelAlbedo = diffuseColor;
+        prd.pixelColor = pixelColor;
     }
+    else {
 
-    // start with some ambient term
-    vec3f pixelColor = (0.1f + 0.2f*fabsf(dot(Ns,rayDir)))*diffuseColor;
-    
-    // ------------------------------------------------------------------
-    // compute shadow
-    // ------------------------------------------------------------------
-    const vec3f surfPos
-      = (1.f-u-v) * sbtData.vertex[index.x]
-      +         u * sbtData.vertex[index.y]
-      +         v * sbtData.vertex[index.z];
-
-    const int numLightSamples = NUM_LIGHT_SAMPLES;
-    for (int lightSampleID=0;lightSampleID<numLightSamples;lightSampleID++) {
-      // produce random light sample
-      const vec3f lightPos
-        = optixLaunchParams.light.origin
-        + prd.random() * optixLaunchParams.light.du
-        + prd.random() * optixLaunchParams.light.dv;
-      vec3f lightDir = lightPos - surfPos;
-      float lightDist = length(lightDir);
-      lightDir = normalize(lightDir);
-    
-      // trace shadow ray:
-      const float NdotL = dot(lightDir,Ns);
-      if (NdotL >= 0.f) {
-        vec3f lightVisibility = 0.f;
-        // the values we store the PRD pointer in:
-        uint32_t u0, u1;
-        packPointer( &lightVisibility, u0, u1 );
-        optixTrace(optixLaunchParams.traversable,
-                   surfPos + 1e-3f * Ng,
-                   lightDir,
-                   1e-3f,      // tmin
-                   lightDist * (1.f-1e-3f),  // tmax
-                   0.0f,       // rayTime
-                   OptixVisibilityMask( 255 ),
-                   // For shadow rays: skip any/closest hit shaders and terminate on first
-                   // intersection with anything. The miss shader is used to mark if the
-                   // light was visible.
-                   OPTIX_RAY_FLAG_DISABLE_ANYHIT
-                   | OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT
-                   | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT,
-                   SHADOW_RAY_TYPE,            // SBT offset
-                   RAY_TYPE_COUNT,               // SBT stride
-                   SHADOW_RAY_TYPE,            // missSBTIndex 
-                   u0, u1 );
-        pixelColor
-          += lightVisibility
-          *  optixLaunchParams.light.power
-          *  diffuseColor
-          *  (NdotL / (lightDist*lightDist*numLightSamples));
-      }
     }
-
-    prd.pixelNormal = Ns;
-    prd.pixelAlbedo = diffuseColor;
-    prd.pixelColor = pixelColor;
   }
   
   extern "C" __global__ void __anyhit__radiance()
@@ -218,8 +224,8 @@ namespace cga {
   extern "C" __global__ void __miss__radiance()
   {
     PRD &prd = *getPRD<PRD>();
-    // set to constant white as background color
-    prd.pixelColor = vec3f(0.3f);
+     // set to constant white as background color
+     prd.pixelColor = vec3f(0.15f);
   }
 
   extern "C" __global__ void __miss__shadow()
@@ -228,6 +234,73 @@ namespace cga {
     vec3f &prd = *(vec3f*)getPRD<vec3f>();
     prd = vec3f(1.f);
   }
+
+
+
+  extern "C" __global__ void __raygen__emitPhoton()
+  {
+      const int ix = optixGetLaunchIndex().x;
+      const int iy = optixGetLaunchIndex().y;
+      PRD prd_photon;
+      prd_photon.isPhoton = true;
+      prd_photon.random.init(ix + optixLaunchParams.frame.fbSize.x * iy,
+          optixLaunchParams.frame.frameID);
+      prd_photon.pixelColor = vec3f(0.f);
+      const uint32_t fbIndex = ix + iy * optixLaunchParams.frame.fbSize.x;
+
+      int numPixelSamples = optixLaunchParams.numPixelSamples;
+
+      // the values we store the PRD pointer in:
+      uint32_t u_0, u_1;
+      packPointer(&prd_photon, u_0, u_1);
+
+      const vec3f lightPos
+          = optixLaunchParams.light.origin
+          + prd_photon.random() * optixLaunchParams.light.du
+          + prd_photon.random() * optixLaunchParams.light.dv;
+      
+      const auto& camera = optixLaunchParams.camera;
+
+      vec2f screen(vec2f(ix + prd_photon.random(), iy + prd_photon.random())
+          / vec2f(optixLaunchParams.frame.fbSize));
+      vec3f pixelColor = 0.f;
+      for (int i = 0; i < 1; i++) {
+          Photon photon = Photon(lightPos.x, lightPos.y, lightPos.z, 'a', 'a', 'a', 3);
+     
+
+          vec3f rayDir = normalize(camera.direction
+              + (screen.x - 0.5f) * camera.horizontal
+              + (screen.y - 0.5f) * camera.vertical);
+
+          optixTrace(optixLaunchParams.traversable,
+              lightPos,
+              rayDir,
+              0.f,    // tmin
+              1e20f,  // tmax
+              0.0f,   // rayTime
+              OptixVisibilityMask(255),
+              OPTIX_RAY_FLAG_DISABLE_ANYHIT,//OPTIX_RAY_FLAG_NONE,
+              RADIANCE_RAY_TYPE,            // SBT offset
+              RAY_TYPE_COUNT,               // SBT stride
+              RADIANCE_RAY_TYPE,            // missSBTIndex 
+              u_0, u_1);
+          pixelColor += prd_photon.pixelColor;
+      }
+      vec4f rgba(pixelColor / numPixelSamples, 1.f);
+
+      // and write/accumulate to frame buffer ...
+      if (optixLaunchParams.frame.frameID > 0) {
+          rgba
+              += float(optixLaunchParams.frame.frameID)
+              * vec4f(optixLaunchParams.frame.fbColor[fbIndex]);
+          rgba /= (optixLaunchParams.frame.frameID + 1.f);
+      }
+      optixLaunchParams.frame.fbColor[fbIndex] = (float4)rgba;
+      optixLaunchParams.frame.fbFinal[fbIndex] = owl::make_rgba(rgba);
+
+  }
+
+
 
   //------------------------------------------------------------------------------
   // ray gen program - the actual rendering happens in here

@@ -37,6 +37,7 @@ namespace cga {
     rayGen
       = owlRayGenCreate(context,module,"renderFrame",
                         /* no sbt data: */0,nullptr,-1);
+    photonEmiter = owlRayGenCreate(context, module, "emitPhoton", /* no sbt data: */0, nullptr, -1);
     missProgRadiance
       = owlMissProgCreate(context,module,"radiance",
                           /* no sbt data: */0,nullptr,-1);
@@ -199,7 +200,8 @@ namespace cga {
     owlParamsSet1i(launchParams,"numPixelSamples",numPixelSamples);
     frameID++;
 
-    owlLaunch2D(rayGen,fbSize.x,fbSize.y,launchParams);
+    owlLaunch2D(rayGen, fbSize.x, fbSize.y, launchParams);
+    owlLaunch2D(photonEmiter, fbSize.x, fbSize.y, launchParams);
   }
 
   /*! set camera to render with */

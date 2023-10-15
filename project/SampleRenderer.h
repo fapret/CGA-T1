@@ -115,6 +115,7 @@ namespace cga {
     OWLModule       module = nullptr;
     OWLLaunchParams launchParams = nullptr;
     OWLRayGen       rayGen = nullptr;
+    OWLRayGen       photonEmiter = nullptr;
     OWLMissProg     missProgRadiance = nullptr;
     OWLMissProg     missProgShadow = nullptr;
 
