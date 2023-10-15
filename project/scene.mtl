@@ -74,12 +74,12 @@ map_Kd textures/violet.tga
 map_Ka textures/violet.tga
 
 newmtl Material.007
-Ns 250.000000
+Ns 1000.000000
 Ka 1.000000 1.000000 1.000000
 Kd 0.800000 0.800000 0.800000
-Ks 0.500000 0.500000 0.500000
+Ks 1.0 1.0 1.0
 Ke 0.000000 0.000000 0.000000
-Ni 1.450000
+Ni 1.0
 d 1.000000
 illum 2
 map_Kd textures/orange.tga
@@ -91,11 +91,13 @@ Ka 1.000000 1.000000 1.000000
 Kd 0.800000 0.800000 0.800000
 Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000
-Ni 1.450000
-d 1.000000
+Ni 1.50000
+d 0.3  # Increase transparency to 30%
+Tr 0.3  # Use Tr for transparency as an alternative
 illum 2
 map_Kd textures/yellow.tga
 map_Ka textures/yellow.tga
+
 
 newmtl Material.009
 Ns 250.000000

@@ -19,6 +19,7 @@
 
 #include "LaunchParams.h"
 #include <owl/common/math/random.h>
+#include <vector>
 
 using namespace cga;
 
@@ -33,6 +34,7 @@ namespace cga {
       optixLaunch) */
   extern "C" __constant__ LaunchParams optixLaunchParams;
 
+
   /*! per-ray data now captures random number generator, so programs
       can access RNG state */
   struct PRD {
@@ -42,6 +44,7 @@ namespace cga {
     vec3f  pixelNormal;
     vec3f  pixelAlbedo;
   };
+  
   
   static __forceinline__ __device__
   void *unpackPointer( uint32_t i0, uint32_t i1 )
@@ -66,6 +69,8 @@ namespace cga {
     const uint32_t u1 = optixGetPayload_1();
     return reinterpret_cast<T*>( unpackPointer( u0, u1 ) );
   }
+
+
   
   //------------------------------------------------------------------------------
   // closest hit and anyhit programs for radiance-type rays.
@@ -203,6 +208,7 @@ namespace cga {
         prd.pixelColor = pixelColor;
     }
     else {
+        // es un foton
 
     }
   }
@@ -236,7 +242,7 @@ namespace cga {
   }
 
 
-
+  
   extern "C" __global__ void __raygen__emitPhoton()
   {
       const int ix = optixGetLaunchIndex().x;
@@ -264,10 +270,8 @@ namespace cga {
       vec2f screen(vec2f(ix + prd_photon.random(), iy + prd_photon.random())
           / vec2f(optixLaunchParams.frame.fbSize));
       vec3f pixelColor = 0.f;
-      for (int i = 0; i < 1; i++) {
+      for (int i = 0; i < 10; i++) {
           Photon photon = Photon(lightPos.x, lightPos.y, lightPos.z, 'a', 'a', 'a', 3);
-     
-
           vec3f rayDir = normalize(camera.direction
               + (screen.x - 0.5f) * camera.horizontal
               + (screen.y - 0.5f) * camera.vertical);
@@ -286,7 +290,7 @@ namespace cga {
               u_0, u_1);
           pixelColor += prd_photon.pixelColor;
       }
-      vec4f rgba(pixelColor / numPixelSamples, 1.f);
+      vec4f rgba(pixelColor, 1.f);
 
       // and write/accumulate to frame buffer ...
       if (optixLaunchParams.frame.frameID > 0) {

@@ -58,8 +58,15 @@ namespace cga {
           }
           throw std::out_of_range("Index out of range");
       };
-
-
+      __host__ __device__ Photon() {
+          this->x = 0;
+          this->y = 0;
+          this->z = 0;
+          *this->p = 'd';
+          this->phi = 'd';
+          this->theta = 'd';
+          this->flag = 'd';
+      };
       __host__ __device__ Photon(double x, double y, double z, char p, char phi, char theta, short flag)
       {
           this->x = x;
@@ -71,6 +78,8 @@ namespace cga {
           this->flag = flag;
       }
   };
+
+  
   
   struct LaunchParams
   {
@@ -101,6 +110,7 @@ namespace cga {
     } light;
     
     OptixTraversableHandle traversable;
+  
   };
 
 } // ::osc
