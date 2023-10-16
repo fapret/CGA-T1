@@ -125,6 +125,7 @@ namespace cga {
       the border), and in float4 format (the denoiser requires
       floats) */
     OWLBuffer fbColor = nullptr;
+    OWLBuffer photonArray = nullptr;
     OWLBuffer fbNormal = nullptr;
     OWLBuffer fbAlbedo = nullptr;
     

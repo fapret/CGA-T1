@@ -52,6 +52,8 @@ namespace cga {
 
       { "numPixelSamples", OWL_INT,    OWL_OFFSETOF(LaunchParams,numPixelSamples)},
 
+      { "photonArray",OWL_BUFPTR,OWL_OFFSETOF(LaunchParams,photonArray)},
+
       { "frame.frameID", OWL_INT,    OWL_OFFSETOF(LaunchParams,frame.frameID)},
       { "frame.fbColor",OWL_BUFPTR,OWL_OFFSETOF(LaunchParams,frame.fbColor)},
       { "frame.fbFinal",OWL_RAW_POINTER,OWL_OFFSETOF(LaunchParams,frame.fbFinal)},
@@ -238,8 +240,8 @@ namespace cga {
     owlParamsSet1i(launchParams,"numPixelSamples",numPixelSamples);
     frameID++;
 
-    owlLaunch2D(rayGen, fbSize.x, fbSize.y, launchParams);
-    owlLaunch2D(photonEmiter, fbSize.x, fbSize.y, launchParams);
+    //owlLaunch2D(rayGen, fbSize.x, fbSize.y, launchParams);
+    
   }
 
   /*! set camera to render with */
@@ -273,19 +275,26 @@ namespace cga {
   /*! resize frame buffer to given resolution */
   void SampleRenderer::resize(void *fbPointer, const vec2i &newSize)
   {
+    
     if (fbColor) {
       owlBufferDestroy(fbColor);
     }
 
+    if (photonArray) {
+        owlBufferDestroy(photonArray);
+    }
     this->fbSize = newSize;
     fbColor = owlDeviceBufferCreate(context,OWL_FLOAT4,fbSize.x*fbSize.y,nullptr);
+    photonArray = owlDeviceBufferCreate(context, OWL_FLOAT4, fbSize.x * fbSize.y, nullptr);
 
     owlParamsSetBuffer(launchParams,"frame.fbColor",fbColor);
+    owlParamsSetBuffer(launchParams, "photonArray", photonArray);
     owlParamsSet1ul(launchParams,"frame.fbFinal",(uint64_t)fbPointer);
     owlParamsSet2i(launchParams,"frame.fbSize",(const owl2i&)fbSize);
 
     // and re-set the camera, since aspect may have changed
     setCamera(lastSetCamera);
+    owlLaunch2D(photonEmiter, fbSize.x, fbSize.y, launchParams);
   }
 
 } // ::osc

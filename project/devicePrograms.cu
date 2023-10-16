@@ -41,6 +41,7 @@ namespace cga {
     Random random;
     vec3f  pixelColor;
     bool   isPhoton;
+    Photon photon;
     vec3f  pixelNormal;
     vec3f  pixelAlbedo;
   };
@@ -209,7 +210,9 @@ namespace cga {
     }
     else {
         // es un foton
-
+        // tenemos que reducir la intensidad y rebotarlo
+        optixLaunchParams.photonArray[4] = prd.photon;
+        prd.pixelColor = 0.5;
     }
   }
   
@@ -269,9 +272,12 @@ namespace cga {
 
       vec2f screen(vec2f(ix + prd_photon.random(), iy + prd_photon.random())
           / vec2f(optixLaunchParams.frame.fbSize));
-      vec3f pixelColor = 0.f;
-      for (int i = 0; i < 10; i++) {
+      for (int i = 0; i < 1000; i++) {
+          vec3f pixelColor = 0.f;
           Photon photon = Photon(lightPos.x, lightPos.y, lightPos.z, 'a', 'a', 'a', 3);
+          photon.color = make_float3(1.0f, 1.0f, 1.0f);
+          prd_photon.photon = photon;
+          
           vec3f rayDir = normalize(camera.direction
               + (screen.x - 0.5f) * camera.horizontal
               + (screen.y - 0.5f) * camera.vertical);
@@ -288,20 +294,7 @@ namespace cga {
               RAY_TYPE_COUNT,               // SBT stride
               RADIANCE_RAY_TYPE,            // missSBTIndex 
               u_0, u_1);
-          pixelColor += prd_photon.pixelColor;
       }
-      vec4f rgba(pixelColor, 1.f);
-
-      // and write/accumulate to frame buffer ...
-      if (optixLaunchParams.frame.frameID > 0) {
-          rgba
-              += float(optixLaunchParams.frame.frameID)
-              * vec4f(optixLaunchParams.frame.fbColor[fbIndex]);
-          rgba /= (optixLaunchParams.frame.frameID + 1.f);
-      }
-      optixLaunchParams.frame.fbColor[fbIndex] = (float4)rgba;
-      optixLaunchParams.frame.fbFinal[fbIndex] = owl::make_rgba(rgba);
-
   }
 
 

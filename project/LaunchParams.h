@@ -46,6 +46,8 @@ namespace cga {
       double x;
       double y;
       double z;
+      float3 color;
+      float power;
 
       double& operator[](int index) {
           switch (index) {
@@ -110,6 +112,8 @@ namespace cga {
     } light;
     
     OptixTraversableHandle traversable;
+
+    Photon* photonArray;
   
   };
 
