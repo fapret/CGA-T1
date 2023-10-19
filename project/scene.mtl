@@ -4,11 +4,10 @@
 newmtl Material.001
 Ns 250.000000
 Ka 1.000000 1.000000 1.000000
-Kd 0.800000 0.800000 0.800000
+Kd 0.500000 0.500000 0.500000
 Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000
 Ni 1.450000
-d 1.000000
 illum 2
 map_Kd textures/paredes.tga
 map_Ka textures/paredes.tga
@@ -16,11 +15,10 @@ map_Ka textures/paredes.tga
 newmtl Material.002
 Ns 250.000000
 Ka 1.000000 1.000000 1.000000
-Kd 0.800000 0.800000 0.800000
+Kd 0.500000 0.500000 0.500000
 Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000
 Ni 1.450000
-d 1.000000
 illum 2
 map_Kd textures/red.tga
 map_Ka textures/red.tga
@@ -28,11 +26,10 @@ map_Ka textures/red.tga
 newmtl Material.003
 Ns 250.000000
 Ka 1.000000 1.000000 1.000000
-Kd 0.800000 0.800000 0.800000
+Kd 0.500000 0.500000 0.500000
 Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000
 Ni 1.450000
-d 1.000000
 illum 2
 map_Kd textures/green.tga
 map_Ka textures/green.tga
@@ -40,11 +37,10 @@ map_Ka textures/green.tga
 newmtl Material.004
 Ns 250.000000
 Ka 1.000000 1.000000 1.000000
-Kd 0.800000 0.800000 0.800000
+Kd 0.500000 0.500000 0.500000
 Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000
 Ni 1.450000
-d 1.000000
 illum 2
 map_Kd textures/blue.tga
 map_Ka textures/blue.tga
@@ -52,11 +48,10 @@ map_Ka textures/blue.tga
 newmtl Material.005
 Ns 250.000000
 Ka 1.000000 1.000000 1.000000
-Kd 0.800000 0.800000 0.800000
+Kd 0.500000 0.500000 0.500000
 Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000
 Ni 1.450000
-d 1.000000
 illum 2
 map_Kd textures/pink.tga
 map_Ka textures/pink.tga
@@ -64,11 +59,10 @@ map_Ka textures/pink.tga
 newmtl Material.006
 Ns 250.000000
 Ka 1.000000 1.000000 1.000000
-Kd 0.800000 0.800000 0.800000
+Kd 0.500000 0.500000 0.500000
 Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000
 Ni 1.450000
-d 1.000000
 illum 2
 map_Kd textures/violet.tga
 map_Ka textures/violet.tga
@@ -76,11 +70,10 @@ map_Ka textures/violet.tga
 newmtl Material.007
 Ns 1000.000000
 Ka 1.000000 1.000000 1.000000
-Kd 0.800000 0.800000 0.800000
-Ks 1.0 1.0 1.0
+Kd 0.500000 0.500000 0.500000
+Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000
 Ni 1.0
-d 1.000000
 illum 2
 map_Kd textures/orange.tga
 map_Ka textures/orange.tga
@@ -88,12 +81,10 @@ map_Ka textures/orange.tga
 newmtl Material.008
 Ns 250.000000
 Ka 1.000000 1.000000 1.000000
-Kd 0.800000 0.800000 0.800000
+Kd 0.500000 0.500000 0.500000
 Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000
 Ni 1.50000
-d 0.3  # Increase transparency to 30%
-Tr 0.3  # Use Tr for transparency as an alternative
 illum 2
 map_Kd textures/yellow.tga
 map_Ka textures/yellow.tga
@@ -102,11 +93,10 @@ map_Ka textures/yellow.tga
 newmtl Material.009
 Ns 250.000000
 Ka 1.000000 1.000000 1.000000
-Kd 0.800000 0.800000 0.800000
+Kd 0.500000 0.500000 0.500000
 Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000
 Ni 1.450000
-d 1.000000
 illum 2
 map_Kd textures/mesa.tga
 map_Ka textures/mesa.tga
