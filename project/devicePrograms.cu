@@ -214,26 +214,34 @@ namespace cga {
         // es un foton que paga en una superfice, tenemos que meterlo en el kdtree
         // tenemos que reducir la intensidad y rebotarlo
         
-        //optixLaunchParams.photonArray[prd.photon.index] = prd.photon;
+        optixLaunchParams.photonArray[prd.photon.index + prd.photon.threadId * 10 + prd.photon.timesBounced * 1000] = prd.photon;
         
         if (prd.photon.timesBounced + 1 > optixLaunchParams.numOfBounces) {
             return;
         }
         
-        bool absorbed = true;
-        vec3f difuse = sbtData.color;
-        vec3f specular = sbtData.specular;
-        printf("Specular color (%f, %f, %f)  \n", specular[0], specular[1], specular[2]);
-        //printf("Difuse color (%f, %f, %f)  \n", difuse[0], difuse[1], difuse[2]);
-        if (absorbed) {
+        float difuse = sbtData.color[0] ;
+        float specular = sbtData.specular[0];
+
+        float randomNum = prd.random();
+        printf("%f\n", randomNum);
+
+
+        if (randomNum <= difuse) {
+            // es difusa
+            //Photon bouncedPhoton = Photon();
+            //bouncedPhoton.index = prd.photon.index + optixLaunchParams.numOfPhotons;
+            //bouncedPhoton.timesBounced = prd.photon.timesBounced + 1;
+            //prd.pixelColor = 0.5;
+        }
+        else if (randomNum <= difuse + specular) {
+            // es especular
+        }
+        else {
+            // fue absorbido
             return;
         }
-     
-        //Photon bouncedPhoton = Photon();
-        //bouncedPhoton.index = prd.photon.index + optixLaunchParams.numOfPhotons;
-        //bouncedPhoton.timesBounced = prd.photon.timesBounced + 1;
-        //prd.pixelColor = 0.5;
-
+        
     }
   }
   
@@ -283,6 +291,13 @@ namespace cga {
       // the values we store the PRD pointer in:
       uint32_t u_0, u_1;
       packPointer(&prd_photon, u_0, u_1);
+      
+      int threadId_x = threadIdx.x + blockIdx.x * blockDim.x;
+      int threadId_y = threadIdx.y + blockIdx.y * blockDim.y;
+      int threadId_z = threadIdx.z + blockIdx.z * blockDim.z;
+
+      int threadId = threadId_x + 10 * threadId_y + 100* threadId_z;
+      printf("Thread ID: %d\n", threadId);
 
       const vec3f lightPos
           = optixLaunchParams.light.origin
@@ -299,6 +314,9 @@ namespace cga {
           Photon photon = Photon(lightPos.x, lightPos.y, lightPos.z, 'a', 'a', 'a', 3);
           photon.color = make_float3(1.0f, 1.0f, 1.0f);
           photon.index = i;
+          photon.threadId = threadId;
+          //printf("Photon index %d\n", i);
+          photon.timesBounced = 0;
           prd_photon.photon = photon;
           
           vec3f rayDir = normalize(camera.direction

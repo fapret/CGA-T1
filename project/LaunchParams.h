@@ -44,6 +44,7 @@ namespace cga {
       char p[4];
       char phi, theta;
       short flag;
+      int threadId;
       double x;
       double y;
       double z;
@@ -89,7 +90,7 @@ namespace cga {
   struct LaunchParams
   {
     int numPixelSamples = 1;
-    int numOfPhotons = 1000;
+    int numOfPhotons = 10;
     int numOfBounces = 5;
     struct {
       int       frameID = 0;

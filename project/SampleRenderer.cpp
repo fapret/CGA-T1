@@ -295,7 +295,7 @@ namespace cga {
     this->fbSize = newSize;
     fbColor = owlDeviceBufferCreate(context,OWL_FLOAT4,fbSize.x*fbSize.y,nullptr);
     LaunchParams params;
-    photonArray = owlDeviceBufferCreate(context, OWL_FLOAT4, params.numOfPhotons * params.numOfBounces, nullptr);
+    photonArray = owlDeviceBufferCreate(context, OWL_FLOAT4, 1000 * params.numOfPhotons * params.numOfBounces, nullptr);
 
     owlParamsSetBuffer(launchParams,"frame.fbColor",fbColor);
     owlParamsSetBuffer(launchParams, "photonArray", photonArray);
@@ -306,7 +306,7 @@ namespace cga {
 
     // and re-set the camera, since aspect may have changed
     setCamera(lastSetCamera);
-    owlLaunch2D(photonEmiter, fbSize.x, fbSize.y, launchParams);
+    owlLaunch3D(photonEmiter, 10, 10, 10, launchParams);
   }
 
 } // ::osc
