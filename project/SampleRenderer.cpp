@@ -214,6 +214,7 @@ namespace cga {
       owlGeomSetBuffer(geom,"texcoord",texcoordBuffer);
 
       owlGeomSet3f(geom,"color",(const owl3f &)mesh.diffuse);
+      owlGeomSet3f(geom, "specular", (const owl3f&)mesh.specular);
       if (mesh.diffuseTextureID >= 0) {
         owlGeomSet1i(geom,"hasTexture",1);
         assert(mesh.diffuseTextureID < (int)textures.size());
@@ -245,6 +246,7 @@ namespace cga {
       frameID = 0;
     owlParamsSet1i(launchParams,"frame.frameID",frameID);
     owlParamsSet1i(launchParams,"numPixelSamples",numPixelSamples);
+
     frameID++;
 
     owlLaunch2D(rayGen, fbSize.x, fbSize.y, launchParams);
@@ -293,12 +295,14 @@ namespace cga {
     this->fbSize = newSize;
     fbColor = owlDeviceBufferCreate(context,OWL_FLOAT4,fbSize.x*fbSize.y,nullptr);
     LaunchParams params;
-    photonArray = owlDeviceBufferCreate(context, OWL_FLOAT4, params.numOfBounces * params.numOfBounces, nullptr);
+    photonArray = owlDeviceBufferCreate(context, OWL_FLOAT4, params.numOfPhotons * params.numOfBounces, nullptr);
 
     owlParamsSetBuffer(launchParams,"frame.fbColor",fbColor);
     owlParamsSetBuffer(launchParams, "photonArray", photonArray);
     owlParamsSet1ul(launchParams,"frame.fbFinal",(uint64_t)fbPointer);
     owlParamsSet2i(launchParams,"frame.fbSize",(const owl2i&)fbSize);
+    owlParamsSet1i(launchParams, "numOfPhotons", params.numOfPhotons);
+    owlParamsSet1i(launchParams, "numOfBounces", params.numOfBounces);
 
     // and re-set the camera, since aspect may have changed
     setCamera(lastSetCamera);

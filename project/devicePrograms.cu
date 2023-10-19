@@ -140,6 +140,7 @@ namespace cga {
         // available
         // ------------------------------------------------------------------
         vec3f diffuseColor = sbtData.color;
+        
         if (sbtData.hasTexture && sbtData.texcoord) {
             const vec2f tc
                 = (1.f - u - v) * sbtData.texcoord[index.x]
@@ -148,6 +149,7 @@ namespace cga {
 
             vec4f fromTexture = tex2D<float4>(sbtData.texture, tc.x, tc.y);
             diffuseColor *= (vec3f)fromTexture;
+            
         }
 
         // start with some ambient term
@@ -211,23 +213,26 @@ namespace cga {
     else {
         // es un foton que paga en una superfice, tenemos que meterlo en el kdtree
         // tenemos que reducir la intensidad y rebotarlo
-        optixLaunchParams.photonArray[prd.photon.index] = prd.photon;
+        
+        //optixLaunchParams.photonArray[prd.photon.index] = prd.photon;
+        
         if (prd.photon.timesBounced + 1 > optixLaunchParams.numOfBounces) {
             return;
         }
         
-        bool absorbed;
+        bool absorbed = true;
         vec3f difuse = sbtData.color;
         vec3f specular = sbtData.specular;
-        printf("Thread d says hello!");
+        printf("Specular color (%f, %f, %f)  \n", specular[0], specular[1], specular[2]);
+        //printf("Difuse color (%f, %f, %f)  \n", difuse[0], difuse[1], difuse[2]);
         if (absorbed) {
             return;
         }
      
-        Photon bouncedPhoton = Photon();
-        bouncedPhoton.index = prd.photon.index + optixLaunchParams.numOfPhotons;
-        bouncedPhoton.timesBounced = prd.photon.timesBounced + 1;
-        prd.pixelColor = 0.5;
+        //Photon bouncedPhoton = Photon();
+        //bouncedPhoton.index = prd.photon.index + optixLaunchParams.numOfPhotons;
+        //bouncedPhoton.timesBounced = prd.photon.timesBounced + 1;
+        //prd.pixelColor = 0.5;
 
     }
   }
@@ -288,6 +293,7 @@ namespace cga {
 
       vec2f screen(vec2f(ix + prd_photon.random(), iy + prd_photon.random())
           / vec2f(optixLaunchParams.frame.fbSize));
+
       for (int i = 0; i < optixLaunchParams.numOfPhotons; i++) {
           vec3f pixelColor = 0.f;
           Photon photon = Photon(lightPos.x, lightPos.y, lightPos.z, 'a', 'a', 'a', 3);
