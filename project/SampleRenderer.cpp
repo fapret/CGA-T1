@@ -24,6 +24,9 @@ namespace cga {
 
   extern "C" char devicePrograms_ptx[];
 
+  int numOfPhotons;
+  int numOfBounces;
+
   /*! constructor - performs all setup, including initializing
     optix, creates module, pipeline, programs, SBT, etc. */
   SampleRenderer::SampleRenderer(const Model *model, const QuadLight &light)
@@ -70,6 +73,9 @@ namespace cga {
       { "camera.direction", OWL_FLOAT3, OWL_OFFSETOF(LaunchParams,camera.direction)},
       { "camera.horizontal", OWL_FLOAT3, OWL_OFFSETOF(LaunchParams,camera.horizontal)},
       { "camera.vertical", OWL_FLOAT3, OWL_OFFSETOF(LaunchParams,camera.vertical)},
+
+      { "numOfPhotons", OWL_INT, OWL_OFFSETOF(LaunchParams,numOfPhotons)},
+      { "numOfBounces", OWL_INT, OWL_OFFSETOF(LaunchParams,numOfBounces)},
       { nullptr /* sentinel to mark end of list */ }
     };
 
@@ -153,6 +159,7 @@ namespace cga {
 
     OWLVarDecl triMeshVars[] = {
       { "color",    OWL_FLOAT3, OWL_OFFSETOF(TriangleMeshSBTData,color) },
+      { "specular",    OWL_FLOAT3, OWL_OFFSETOF(TriangleMeshSBTData,specular) },
       { "vertex",   OWL_BUFPTR, OWL_OFFSETOF(TriangleMeshSBTData,vertex) },
       { "normal",   OWL_BUFPTR, OWL_OFFSETOF(TriangleMeshSBTData,normal) },
       { "index",    OWL_BUFPTR, OWL_OFFSETOF(TriangleMeshSBTData,index) },
@@ -240,7 +247,7 @@ namespace cga {
     owlParamsSet1i(launchParams,"numPixelSamples",numPixelSamples);
     frameID++;
 
-    //owlLaunch2D(rayGen, fbSize.x, fbSize.y, launchParams);
+    owlLaunch2D(rayGen, fbSize.x, fbSize.y, launchParams);
     
   }
 
@@ -285,7 +292,8 @@ namespace cga {
     }
     this->fbSize = newSize;
     fbColor = owlDeviceBufferCreate(context,OWL_FLOAT4,fbSize.x*fbSize.y,nullptr);
-    photonArray = owlDeviceBufferCreate(context, OWL_FLOAT4, fbSize.x * fbSize.y, nullptr);
+    LaunchParams params;
+    photonArray = owlDeviceBufferCreate(context, OWL_FLOAT4, params.numOfBounces * params.numOfBounces, nullptr);
 
     owlParamsSetBuffer(launchParams,"frame.fbColor",fbColor);
     owlParamsSetBuffer(launchParams, "photonArray", photonArray);

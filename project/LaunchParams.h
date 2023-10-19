@@ -29,6 +29,7 @@ namespace cga {
 
   struct TriangleMeshSBTData {
     vec3f  color;
+    vec3f  specular;
     vec3f *vertex;
     vec3f *normal;
     vec2f *texcoord;
@@ -47,7 +48,9 @@ namespace cga {
       double y;
       double z;
       float3 color;
+      int index;
       float power;
+      int timesBounced;
 
       double& operator[](int index) {
           switch (index) {
@@ -86,6 +89,8 @@ namespace cga {
   struct LaunchParams
   {
     int numPixelSamples = 1;
+    int numOfPhotons = 1000;
+    int numOfBounces = 5;
     struct {
       int       frameID = 0;
       // the *final* frame buffer, after accum

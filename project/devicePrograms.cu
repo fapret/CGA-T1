@@ -209,10 +209,26 @@ namespace cga {
         prd.pixelColor = pixelColor;
     }
     else {
-        // es un foton
+        // es un foton que paga en una superfice, tenemos que meterlo en el kdtree
         // tenemos que reducir la intensidad y rebotarlo
-        optixLaunchParams.photonArray[4] = prd.photon;
+        optixLaunchParams.photonArray[prd.photon.index] = prd.photon;
+        if (prd.photon.timesBounced + 1 > optixLaunchParams.numOfBounces) {
+            return;
+        }
+        
+        bool absorbed;
+        vec3f difuse = sbtData.color;
+        vec3f specular = sbtData.specular;
+        printf("Thread d says hello!");
+        if (absorbed) {
+            return;
+        }
+     
+        Photon bouncedPhoton = Photon();
+        bouncedPhoton.index = prd.photon.index + optixLaunchParams.numOfPhotons;
+        bouncedPhoton.timesBounced = prd.photon.timesBounced + 1;
         prd.pixelColor = 0.5;
+
     }
   }
   
@@ -272,10 +288,11 @@ namespace cga {
 
       vec2f screen(vec2f(ix + prd_photon.random(), iy + prd_photon.random())
           / vec2f(optixLaunchParams.frame.fbSize));
-      for (int i = 0; i < 1000; i++) {
+      for (int i = 0; i < optixLaunchParams.numOfPhotons; i++) {
           vec3f pixelColor = 0.f;
           Photon photon = Photon(lightPos.x, lightPos.y, lightPos.z, 'a', 'a', 'a', 3);
           photon.color = make_float3(1.0f, 1.0f, 1.0f);
+          photon.index = i;
           prd_photon.photon = photon;
           
           vec3f rayDir = normalize(camera.direction
@@ -313,6 +330,7 @@ namespace cga {
     PRD prd;
     prd.random.init(ix+optixLaunchParams.frame.fbSize.x*iy,
                     optixLaunchParams.frame.frameID);
+    prd.isPhoton = false;
     prd.pixelColor = vec3f(0.f);
 
     // the values we store the PRD pointer in:

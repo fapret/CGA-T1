@@ -183,12 +183,15 @@ namespace cga {
           if (materialID < 0) {
             mesh->diffuse = vec3f(1,0,0);
             mesh->diffuseTextureID = -1;
+            mesh->specular = vec3f(0, 0, 0);
           } else {
             mesh->diffuse = (const vec3f&)materials[materialID].diffuse;
             mesh->diffuseTextureID = loadTexture(model,
                                                  knownTextures,
                                                  materials[materialID].diffuse_texname,
                                                  modelDir);
+
+            mesh->specular = (const vec3f&)materials[materialID].specular;
           }
         }
 
