@@ -57,6 +57,7 @@ namespace cga {
     Photon photon;
     vec3f  pixelNormal;
     vec3f  pixelAlbedo;
+    vec3f  position;
   };
 
   
@@ -168,6 +169,8 @@ namespace cga {
         + u * sbtData.vertex[index.y]
         + v * sbtData.vertex[index.z];
 
+    prd.position = surfPos;
+
     if (!prd.isPhoton) {
         // start with some ambient term
         vec3f pixelColor = (0.1f + 0.2f * fabsf(dot(Ns, rayDir))) * diffuseColor;
@@ -178,7 +181,7 @@ namespace cga {
         
 
         const int numLightSamples = NUM_LIGHT_SAMPLES;
-        for (int lightSampleID = 0; lightSampleID < numLightSamples; lightSampleID++) {
+        for (int lightSampleID = 0; 0; lightSampleID++) {
             // produce random light sample
             const vec3f lightPos
                 = optixLaunchParams.light.origin
@@ -228,15 +231,13 @@ namespace cga {
         // tenemos que reducir la intensidad y rebotarlo
         
         // guardo el foton en el buffer, se guarda el foton que llega con el color que trae
-        prd.photon.x = surfPos[0];
-        prd.photon.y = surfPos[1];
-        prd.photon.z = surfPos[2];
+        prd.photon.position = surfPos;
 
         //if (prd.photon.timesBounced > 1) {
         //    printf("Bounced Times: %d\n", prd.photon.timesBounced);
        // }
 
-        optixLaunchParams.photonArray[prd.photon.index + prd.photon.threadId * 10 + prd.photon.timesBounced * 1000] = prd.photon;
+        optixLaunchParams.photonArray[prd.photon.threadId] = prd.photon;
         
         if (prd.photon.timesBounced + 1 > optixLaunchParams.numOfBounces) {
             return;
@@ -263,6 +264,7 @@ namespace cga {
         bouncedPhoton.timesBounced = prd.photon.timesBounced + 1;
         bouncedPhoton.color = vec3f(1 / bouncedPhoton.timesBounced, 1 / bouncedPhoton.timesBounced, 1 / bouncedPhoton.timesBounced); // se tiene que calcular con los colores de la superfice en la que pego
         prd_bouced.pixelColor = bouncedPhoton.color;
+        bouncedPhoton.threadId = prd.photon.threadId;
 
         if (randomNum <= difuse) {
             // es difusa
@@ -353,11 +355,11 @@ namespace cga {
       uint32_t u_0, u_1;
       packPointer(&prd_photon, u_0, u_1);
       
-      int threadId_x = threadIdx.x + blockIdx.x * blockDim.x;
-      int threadId_y = threadIdx.y + blockIdx.y * blockDim.y;
-      int threadId_z = threadIdx.z + blockIdx.z * blockDim.z;
+      int threadId_x = threadIdx.x;
+      int threadId_y = threadIdx.y;
 
-      int threadId = threadId_x + 10 * threadId_y + 100* threadId_z;
+      int threadId = threadId_x + (threadId_y * 1200);
+
 
       const vec3f lightPos
           = optixLaunchParams.light.origin
@@ -365,6 +367,7 @@ namespace cga {
           + prd_photon.random() * optixLaunchParams.light.dv;
       
       const auto& camera = optixLaunchParams.camera;
+      
 
       vec2f screen(vec2f(ix + prd_photon.random(), iy + prd_photon.random())
           / vec2f(optixLaunchParams.frame.fbSize));
@@ -411,8 +414,11 @@ namespace cga {
     // compute a test pattern based on pixel ID
     const int ix = optixGetLaunchIndex().x;
     const int iy = optixGetLaunchIndex().y;
+
+
     const auto &camera = optixLaunchParams.camera;
     const uint32_t fbIndex = ix+iy*optixLaunchParams.frame.fbSize.x;
+
     
     PRD prd;
     prd.random.init(ix+optixLaunchParams.frame.fbSize.x*iy,
@@ -443,6 +449,7 @@ namespace cga {
                                + (screen.x - 0.5f) * camera.horizontal
                                + (screen.y - 0.5f) * camera.vertical);
 
+
       optixTrace(optixLaunchParams.traversable,
                  camera.position,
                  rayDir,
@@ -459,8 +466,20 @@ namespace cga {
       // pixelNormal += prd.pixelNormal;
       // pixelAlbedo += prd.pixelAlbedo;
     }
-    vec4f rgba(pixelColor/numPixelSamples,1.f);
-
+    // prd.position has the position on which the ray hit
+    // loop the buffer and paint the pixels with the photons
+    
+    for (int photonID = 0; photonID < 960000; photonID++) {
+        if (optixLaunchParams.photonArray[photonID].position.x != 0) {
+            vec3f diff = optixLaunchParams.photonArray[photonID].position - prd.position;
+            float squaredDistance = dot(diff, diff);
+            if (squaredDistance < 1) {
+                pixelColor = optixLaunchParams.photonArray[photonID].color;
+                break;
+            }
+        }
+    }
+    vec4f rgba(pixelColor / numPixelSamples, 1.f);
     // and write/accumulate to frame buffer ...
     if (optixLaunchParams.frame.frameID > 0) {
       rgba
@@ -469,7 +488,6 @@ namespace cga {
       rgba /= (optixLaunchParams.frame.frameID+1.f);
     }
     optixLaunchParams.frame.fbColor[fbIndex] = (float4)rgba;
-    printf("%d\n", fbIndex);
     optixLaunchParams.frame.fbFinal[fbIndex] = owl::make_rgba(rgba);
   }
   

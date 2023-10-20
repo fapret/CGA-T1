@@ -139,7 +139,7 @@ namespace cga {
       QuadLight light = { /* origin */ vec3f(-1350.07f, 200.f, -140.f),
                           /* edge 1 */ vec3f(1.f*light_size,0,0),
                           /* edge 2 */ vec3f(0,0,1.f*light_size),
-                          /* power */  vec3f(1500000.f) };
+                          /* power */  vec3f(3000000.f) };
                       
       // something approximating the scale of the world, so the
       // camera knows how much to move for any given user interaction:

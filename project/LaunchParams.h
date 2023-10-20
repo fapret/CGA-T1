@@ -45,39 +45,33 @@ namespace cga {
       char phi, theta;
       short flag;
       int threadId;
-      double x;
-      double y;
-      double z;
-      float3 color;
+      vec3f dir;
+      vec3f position;
+      vec3f color;
       int index;
       float power;
       int timesBounced;
 
-      double& operator[](int index) {
+      float& operator[](int index) {
           switch (index) {
           case 0:
-              return x;
+              return position.x;
           case 1:
-              return y;
+              return position.y;
           case 2:
-              return z;
+              return position.z;
           }
           throw std::out_of_range("Index out of range");
       };
       __host__ __device__ Photon() {
-          this->x = 0;
-          this->y = 0;
-          this->z = 0;
           *this->p = 'd';
           this->phi = 'd';
           this->theta = 'd';
           this->flag = 'd';
       };
-      __host__ __device__ Photon(double x, double y, double z, char p, char phi, char theta, short flag)
+      __host__ __device__ Photon(float x, float y, float z, char p, char phi, char theta, short flag)
       {
-          this->x = x;
-          this->y = y;
-          this->z = z;
+          this->position = vec3f(x, y, z);
           *this->p = p;
           this->phi = phi;
           this->theta = theta;
@@ -90,8 +84,8 @@ namespace cga {
   struct LaunchParams
   {
     int numPixelSamples = 1;
-    int numOfPhotons = 10;
-    int numOfBounces = 5;
+    int numOfPhotons = 1;
+    int numOfBounces = 1;
     struct {
       int       frameID = 0;
       // the *final* frame buffer, after accum

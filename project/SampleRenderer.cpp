@@ -248,9 +248,7 @@ namespace cga {
     owlParamsSet1i(launchParams,"numPixelSamples",numPixelSamples);
 
     frameID++;
-
     owlLaunch2D(rayGen, fbSize.x, fbSize.y, launchParams);
-    
   }
 
   /*! set camera to render with */
@@ -295,18 +293,20 @@ namespace cga {
     this->fbSize = newSize;
     fbColor = owlDeviceBufferCreate(context,OWL_FLOAT4,fbSize.x*fbSize.y,nullptr);
     LaunchParams params;
-    photonArray = owlDeviceBufferCreate(context, OWL_FLOAT4, 1000 * params.numOfPhotons * params.numOfBounces, nullptr);
+    int size = 1200 * 800 * params.numOfPhotons * params.numOfBounces;
+    photonArray = owlDeviceBufferCreate(context, OWL_FLOAT4, 4000000, nullptr);
 
     owlParamsSetBuffer(launchParams,"frame.fbColor",fbColor);
     owlParamsSetBuffer(launchParams, "photonArray", photonArray);
     owlParamsSet1ul(launchParams,"frame.fbFinal",(uint64_t)fbPointer);
     owlParamsSet2i(launchParams,"frame.fbSize",(const owl2i&)fbSize);
+    printf("fbsize %d %d\n", fbSize.x, fbSize.y);
     owlParamsSet1i(launchParams, "numOfPhotons", params.numOfPhotons);
     owlParamsSet1i(launchParams, "numOfBounces", params.numOfBounces);
 
     // and re-set the camera, since aspect may have changed
     setCamera(lastSetCamera);
-    owlLaunch3D(photonEmiter, 10, 10, 10, launchParams);
+    owlLaunch2D(photonEmiter, 1200, 800, launchParams);
   }
 
 } // ::osc
