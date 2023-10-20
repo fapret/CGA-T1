@@ -20,6 +20,8 @@
 #include "LaunchParams.h"
 #include <owl/common/math/random.h>
 #include <vector>
+#include <math.h>
+
 
 using namespace cga;
 
@@ -34,6 +36,17 @@ namespace cga {
       optixLaunch) */
   extern "C" __constant__ LaunchParams optixLaunchParams;
 
+  static __forceinline__ __device__
+  void calculateNewVector(vec3f& normalVector, float polarAngle, float azimuthalAngle, vec3f& newVector) {
+      float r = sqrtf(normalVector.x * normalVector.x + normalVector.y * normalVector.y + normalVector.z * normalVector.z);
+      float theta = polarAngle;
+      float phi = azimuthalAngle;
+
+      newVector.x = r * sin(theta) * cos(phi);
+      newVector.y = r * sin(theta) * sin(phi);
+      newVector.z = r * cos(theta);
+  }
+
 
   /*! per-ray data now captures random number generator, so programs
       can access RNG state */
@@ -45,7 +58,7 @@ namespace cga {
     vec3f  pixelNormal;
     vec3f  pixelAlbedo;
   };
-  
+
   
   static __forceinline__ __device__
   void *unpackPointer( uint32_t i0, uint32_t i1 )
@@ -98,70 +111,71 @@ namespace cga {
     // ------------------------------------------------------------------
     // gather some basic hit information
     // ------------------------------------------------------------------
-    if (!prd.isPhoton) {
-        const int ix = optixGetLaunchIndex().x;
-        const int iy = optixGetLaunchIndex().y;
+    const int ix = optixGetLaunchIndex().x;
+    const int iy = optixGetLaunchIndex().y;
 
-        const int   primID = optixGetPrimitiveIndex();
-        const vec3i index = sbtData.index[primID];
+    const int   primID = optixGetPrimitiveIndex();
+    const vec3i index = sbtData.index[primID];
 
-        const float u = optixGetTriangleBarycentrics().x;
-        const float v = optixGetTriangleBarycentrics().y;
+    const float u = optixGetTriangleBarycentrics().x;
+    const float v = optixGetTriangleBarycentrics().y;
 
-        // ------------------------------------------------------------------
-        // compute normal, using either shading normal (if avail), or
-        // geometry normal (fallback)
-        // ------------------------------------------------------------------
-        const vec3f& A = sbtData.vertex[index.x];
-        const vec3f& B = sbtData.vertex[index.y];
-        const vec3f& C = sbtData.vertex[index.z];
+    // ------------------------------------------------------------------
+    // compute normal, using either shading normal (if avail), or
+    // geometry normal (fallback)
+    // ------------------------------------------------------------------
+    const vec3f& A = sbtData.vertex[index.x];
+    const vec3f& B = sbtData.vertex[index.y];
+    const vec3f& C = sbtData.vertex[index.z];
 
-        vec3f Ng = cross(B - A, C - A);
-        vec3f Ns = (sbtData.normal)
-            ? ((1.f - u - v) * sbtData.normal[index.x]
-                + u * sbtData.normal[index.y]
-                + v * sbtData.normal[index.z])
-            : Ng;
+    vec3f Ng = cross(B - A, C - A);
+    vec3f Ns = (sbtData.normal)
+        ? ((1.f - u - v) * sbtData.normal[index.x]
+            + u * sbtData.normal[index.y]
+            + v * sbtData.normal[index.z])
+        : Ng;
 
-        // ------------------------------------------------------------------
-        // face-forward and normalize normals
-        // ------------------------------------------------------------------
-        const vec3f rayDir = optixGetWorldRayDirection();
+    // ------------------------------------------------------------------
+    // face-forward and normalize normals
+    // ------------------------------------------------------------------
+    const vec3f rayDir = optixGetWorldRayDirection();
 
-        if (dot(rayDir, Ng) > 0.f) Ng = -Ng;
-        Ng = normalize(Ng);
+    if (dot(rayDir, Ng) > 0.f) Ng = -Ng;
+    Ng = normalize(Ng);
 
-        if (dot(Ng, Ns) < 0.f)
-            Ns -= 2.f * dot(Ng, Ns) * Ng;
-        Ns = normalize(Ns);
+    if (dot(Ng, Ns) < 0.f)
+        Ns -= 2.f * dot(Ng, Ns) * Ng;
+    Ns = normalize(Ns);
 
-        // ------------------------------------------------------------------
+    // ------------------------------------------------------------------
         // compute diffuse material color, including diffuse texture, if
         // available
         // ------------------------------------------------------------------
-        vec3f diffuseColor = sbtData.color;
-        
-        if (sbtData.hasTexture && sbtData.texcoord) {
-            const vec2f tc
-                = (1.f - u - v) * sbtData.texcoord[index.x]
-                + u * sbtData.texcoord[index.y]
-                + v * sbtData.texcoord[index.z];
+    vec3f diffuseColor = sbtData.color;
 
-            vec4f fromTexture = tex2D<float4>(sbtData.texture, tc.x, tc.y);
-            diffuseColor *= (vec3f)fromTexture;
-            
-        }
+    if (sbtData.hasTexture && sbtData.texcoord) {
+        const vec2f tc
+            = (1.f - u - v) * sbtData.texcoord[index.x]
+            + u * sbtData.texcoord[index.y]
+            + v * sbtData.texcoord[index.z];
 
+        vec4f fromTexture = tex2D<float4>(sbtData.texture, tc.x, tc.y);
+        diffuseColor *= (vec3f)fromTexture;
+    }
+
+    const vec3f surfPos
+        = (1.f - u - v) * sbtData.vertex[index.x]
+        + u * sbtData.vertex[index.y]
+        + v * sbtData.vertex[index.z];
+
+    if (!prd.isPhoton) {
         // start with some ambient term
         vec3f pixelColor = (0.1f + 0.2f * fabsf(dot(Ns, rayDir))) * diffuseColor;
 
         // ------------------------------------------------------------------
         // compute shadow
         // ------------------------------------------------------------------
-        const vec3f surfPos
-            = (1.f - u - v) * sbtData.vertex[index.x]
-            + u * sbtData.vertex[index.y]
-            + v * sbtData.vertex[index.z];
+        
 
         const int numLightSamples = NUM_LIGHT_SAMPLES;
         for (int lightSampleID = 0; lightSampleID < numLightSamples; lightSampleID++) {
@@ -205,7 +219,6 @@ namespace cga {
                     * (NdotL / (lightDist * lightDist * numLightSamples));
             }
         }
-
         prd.pixelNormal = Ns;
         prd.pixelAlbedo = diffuseColor;
         prd.pixelColor = pixelColor;
@@ -214,6 +227,15 @@ namespace cga {
         // es un foton que paga en una superfice, tenemos que meterlo en el kdtree
         // tenemos que reducir la intensidad y rebotarlo
         
+        // guardo el foton en el buffer, se guarda el foton que llega con el color que trae
+        prd.photon.x = surfPos[0];
+        prd.photon.y = surfPos[1];
+        prd.photon.z = surfPos[2];
+
+        //if (prd.photon.timesBounced > 1) {
+        //    printf("Bounced Times: %d\n", prd.photon.timesBounced);
+       // }
+
         optixLaunchParams.photonArray[prd.photon.index + prd.photon.threadId * 10 + prd.photon.timesBounced * 1000] = prd.photon;
         
         if (prd.photon.timesBounced + 1 > optixLaunchParams.numOfBounces) {
@@ -224,23 +246,62 @@ namespace cga {
         float specular = sbtData.specular[0];
 
         float randomNum = prd.random();
-        printf("%f\n", randomNum);
+ 
+        if (randomNum > difuse + specular) {
+            // absorbido
+            return;
+        }
 
+        PRD prd_bouced;
+        uint32_t u_0, u_1;
+        packPointer(&prd_bouced, u_0, u_1);
+        prd_bouced.isPhoton = true;
+        vec3f bounceDir = vec3f(0, 0, 0);
+
+        Photon bouncedPhoton = Photon();
+        bouncedPhoton.index = prd.photon.index;
+        bouncedPhoton.timesBounced = prd.photon.timesBounced + 1;
+        bouncedPhoton.color = vec3f(1 / bouncedPhoton.timesBounced, 1 / bouncedPhoton.timesBounced, 1 / bouncedPhoton.timesBounced); // se tiene que calcular con los colores de la superfice en la que pego
+        prd_bouced.pixelColor = bouncedPhoton.color;
 
         if (randomNum <= difuse) {
             // es difusa
-            //Photon bouncedPhoton = Photon();
-            //bouncedPhoton.index = prd.photon.index + optixLaunchParams.numOfPhotons;
-            //bouncedPhoton.timesBounced = prd.photon.timesBounced + 1;
-            //prd.pixelColor = 0.5;
+
+            // Ns es la normal normalizada en el punto de impacto
+            // photon.dir es la direccion de impacto normalizada
+
+            float alpha = prd.random() * 90;
+            float phi = prd.random() * 360;
+
+            float alpha_rad = alpha * M_PI / 180.0;
+            float phi_rad = phi * M_PI / 180.0;
+
+            calculateNewVector(Ns, alpha_rad, phi_rad, bounceDir);
+            //printf("Bounced dir %f - %f - %f\n", surfPos.x, surfPos.y, surfPos.z);
         }
         else if (randomNum <= difuse + specular) {
             // es especular
+
+            bounceDir = prd.photon.dir  - 2.f * dot(prd.photon.dir, Ns) * Ns;
+            //printf("Bounced dir %f - %f - %f\n", surfPos.x, surfPos.y, surfPos.z);
         }
-        else {
-            // fue absorbido
-            return;
-        }
+        
+        bounceDir = normalize(bounceDir);
+        bouncedPhoton.dir = bounceDir;
+        prd_bouced.photon = bouncedPhoton;
+
+        optixTrace(optixLaunchParams.traversable,
+            surfPos,
+            bounceDir,
+            0.f,    // tmin
+            1e20f,  // tmax
+            0.0f,   // rayTime
+            OptixVisibilityMask(255),
+            OPTIX_RAY_FLAG_DISABLE_ANYHIT,//OPTIX_RAY_FLAG_NONE,
+            RADIANCE_RAY_TYPE,            // SBT offset
+            RAY_TYPE_COUNT,               // SBT stride
+            RADIANCE_RAY_TYPE,            // missSBTIndex 
+            u_0, u_1);
         
     }
   }
@@ -297,7 +358,6 @@ namespace cga {
       int threadId_z = threadIdx.z + blockIdx.z * blockDim.z;
 
       int threadId = threadId_x + 10 * threadId_y + 100* threadId_z;
-      printf("Thread ID: %d\n", threadId);
 
       const vec3f lightPos
           = optixLaunchParams.light.origin
@@ -312,16 +372,19 @@ namespace cga {
       for (int i = 0; i < optixLaunchParams.numOfPhotons; i++) {
           vec3f pixelColor = 0.f;
           Photon photon = Photon(lightPos.x, lightPos.y, lightPos.z, 'a', 'a', 'a', 3);
-          photon.color = make_float3(1.0f, 1.0f, 1.0f);
+          photon.color = vec3f(1.0f, 1.0f, 1.0f);
           photon.index = i;
           photon.threadId = threadId;
           //printf("Photon index %d\n", i);
           photon.timesBounced = 0;
-          prd_photon.photon = photon;
+          
           
           vec3f rayDir = normalize(camera.direction
               + (screen.x - 0.5f) * camera.horizontal
               + (screen.y - 0.5f) * camera.vertical);
+
+          photon.dir = rayDir;
+          prd_photon.photon = photon;
 
           optixTrace(optixLaunchParams.traversable,
               lightPos,
@@ -406,7 +469,9 @@ namespace cga {
       rgba /= (optixLaunchParams.frame.frameID+1.f);
     }
     optixLaunchParams.frame.fbColor[fbIndex] = (float4)rgba;
+    printf("%d\n", fbIndex);
     optixLaunchParams.frame.fbFinal[fbIndex] = owl::make_rgba(rgba);
   }
   
 } // ::osc
+
