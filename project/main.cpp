@@ -123,9 +123,11 @@ namespace cga {
       inFileName = av[1];
     try {
       Model *model = loadOBJ(inFileName);
+      vec3f at = model->bounds.center() - vec3f(0, 0, 0);
       Camera camera = { /*from*/vec3f(-1350.07f, 200.f, -140.f),
                         /* at */model->bounds.center()-vec3f(0,0,0),
                         /* up */vec3f(0.f,1.f,0.f) };
+
 
       
 

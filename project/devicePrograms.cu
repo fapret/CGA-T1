@@ -21,6 +21,8 @@
 #include <owl/common/math/random.h>
 #include <vector>
 #include <math.h>
+#include <cmath>
+
 
 
 using namespace cga;
@@ -57,7 +59,7 @@ namespace cga {
     Photon photon;
     vec3f  pixelNormal;
     vec3f  pixelAlbedo;
-    vec3f  position;
+    vec3f  position = vec3f(0, 0, 0);
   };
 
   
@@ -228,8 +230,7 @@ namespace cga {
     }
     else {
         // es un foton que paga en una superfice, tenemos que meterlo en el kdtree
-        // tenemos que reducir la intensidad y rebotarlo
-        
+        // tenemos que rebotarlo
         // guardo el foton en el buffer, se guarda el foton que llega con el color que trae
         prd.photon.position = surfPos;
 
@@ -237,7 +238,9 @@ namespace cga {
         //    printf("Bounced Times: %d\n", prd.photon.timesBounced);
        // }
 
-        optixLaunchParams.photonArray[prd.photon.threadId] = prd.photon;
+        if (prd.photon.timesBounced > 0) {
+            optixLaunchParams.photonArray[prd.photon.threadId] = prd.photon;
+        }
         
         if (prd.photon.timesBounced + 1 > optixLaunchParams.numOfBounces) {
             return;
@@ -262,9 +265,9 @@ namespace cga {
         Photon bouncedPhoton = Photon();
         bouncedPhoton.index = prd.photon.index;
         bouncedPhoton.timesBounced = prd.photon.timesBounced + 1;
-        bouncedPhoton.color = vec3f(1 / bouncedPhoton.timesBounced, 1 / bouncedPhoton.timesBounced, 1 / bouncedPhoton.timesBounced); // se tiene que calcular con los colores de la superfice en la que pego
-        prd_bouced.pixelColor = bouncedPhoton.color;
+        
         bouncedPhoton.threadId = prd.photon.threadId;
+        vec3f bouncedPhotonColor = vec3f(0.f,0.f,0.f);
 
         if (randomNum <= difuse) {
             // es difusa
@@ -279,17 +282,34 @@ namespace cga {
             float phi_rad = phi * M_PI / 180.0;
 
             calculateNewVector(Ns, alpha_rad, phi_rad, bounceDir);
-            //printf("Bounced dir %f - %f - %f\n", surfPos.x, surfPos.y, surfPos.z);
+
+            //Color_difuso_resultante = Color_del_fotón * Color_de_la_superficie * (cos(theta)), donde "theta" es el ángulo entre la dirección de la luz incidente y la normal de la superficie.
+            // Ns es la normal de la superfice
+            const vec3f lightPos
+                = optixLaunchParams.light.origin
+                + prd.random() * optixLaunchParams.light.du
+                + prd.random() * optixLaunchParams.light.dv;
+            vec3f lightDir = lightPos - surfPos;
+            lightDir = normalize(lightDir);
+            bouncedPhotonColor = prd.photon.color * diffuseColor * dot(Ns, lightDir);
+
+            //printf("Bounced Color %f - %f - %f\n", bouncedPhotonColor.x, bouncedPhotonColor.y, bouncedPhotonColor.z);
         }
         else if (randomNum <= difuse + specular) {
             // es especular
-
+            
             bounceDir = prd.photon.dir  - 2.f * dot(prd.photon.dir, Ns) * Ns;
+            vec3f cameraDir = optixLaunchParams.camera.position - surfPos;
+            cameraDir = normalize(cameraDir);
+            vec3f colorEspecular = sbtData.specular * dot(bounceDir, cameraDir);
+            bouncedPhotonColor = prd.photon.color * colorEspecular * dot(bounceDir, cameraDir);
             //printf("Bounced dir %f - %f - %f\n", surfPos.x, surfPos.y, surfPos.z);
         }
         
         bounceDir = normalize(bounceDir);
         bouncedPhoton.dir = bounceDir;
+        bouncedPhoton.color = bouncedPhotonColor;
+        prd_bouced.pixelColor = bouncedPhoton.color;
         prd_bouced.photon = bouncedPhoton;
 
         optixTrace(optixLaunchParams.traversable,
@@ -381,10 +401,21 @@ namespace cga {
           //printf("Photon index %d\n", i);
           photon.timesBounced = 0;
           
+          float u = prd_photon.random();
+          float v = prd_photon.random();
+
+          float phi = 2 * M_PI * u;
+          float thita = acosf((1-v)*(1-cosf(1.4)));
+
+          vec3f dFoton = vec3f(sinf(thita) * cosf(phi), sinf(thita) * sinf(phi), cosf(thita));
+          vec3f direccionEscena = vec3f(-107.297424, 37.1369781, -600.610840) - lightPos;
+          direccionEscena = normalize(direccionEscena);
+      
+          vec3f rayDir = direccionEscena + cosf(thita) * dFoton;
           
-          vec3f rayDir = normalize(camera.direction
-              + (screen.x - 0.5f) * camera.horizontal
-              + (screen.y - 0.5f) * camera.vertical);
+          //vec3f rayDir = normalize(camera.direction
+          //    + (screen.x - 0.5f) * camera.horizontal
+          //    + (screen.y - 0.5f) * camera.vertical);
 
           photon.dir = rayDir;
           prd_photon.photon = photon;
@@ -462,7 +493,7 @@ namespace cga {
                  RAY_TYPE_COUNT,               // SBT stride
                  RADIANCE_RAY_TYPE,            // missSBTIndex 
                  u0, u1 );
-      pixelColor  += prd.pixelColor;
+      //pixelColor  += prd.pixelColor;
       // pixelNormal += prd.pixelNormal;
       // pixelAlbedo += prd.pixelAlbedo;
     }
@@ -471,14 +502,16 @@ namespace cga {
     
     for (int photonID = 0; photonID < 960000; photonID++) {
         if (optixLaunchParams.photonArray[photonID].position.x != 0) {
-            vec3f diff = optixLaunchParams.photonArray[photonID].position - prd.position;
-            float squaredDistance = dot(diff, diff);
-            if (squaredDistance < 1) {
-                pixelColor = optixLaunchParams.photonArray[photonID].color;
-                break;
+            if (prd.position != vec3f(0,0,0)) {
+                vec3f diff = optixLaunchParams.photonArray[photonID].position - prd.position;
+                float squaredDistance = dot(diff, diff);
+                if (squaredDistance < 10) {
+                    pixelColor += vec3f(1, 1, 1);//optixLaunchParams.photonArray[photonID].color;
+                }
             }
         }
     }
+    pixelColor = pixelColor;// / vec3f(100 * M_PI, 100 * M_PI, 100 * M_PI);
     vec4f rgba(pixelColor / numPixelSamples, 1.f);
     // and write/accumulate to frame buffer ...
     if (optixLaunchParams.frame.frameID > 0) {
