@@ -251,7 +251,7 @@ namespace cga {
             prd.photon.color = prd.photon.color; // * dot(Ns, lightDir);
         }
 
-        if (prd.photon.timesBounced > 0) {
+        if (prd.photon.timesBounced >= 0) {
             optixLaunchParams.photonArray[prd.photon.index] = prd.photon;
         }
         
