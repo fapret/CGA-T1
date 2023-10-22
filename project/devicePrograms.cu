@@ -188,7 +188,7 @@ namespace cga {
         
 
         const int numLightSamples = NUM_LIGHT_SAMPLES;
-        for (int lightSampleID = 0; 0; lightSampleID++) {
+        for (int lightSampleID = 0; lightSampleID < numLightSamples; lightSampleID++) {
             // produce random light sample
             const vec3f lightPos
                 = optixLaunchParams.light.origin
@@ -231,7 +231,7 @@ namespace cga {
         }
         prd.pixelNormal = Ns;
         prd.pixelAlbedo = diffuseColor;
-        prd.pixelColor = diffuseColor;
+        prd.pixelColor = pixelColor;
     }
     else {
         // es un foton que paga en una superfice, tenemos que meterlo en el kdtree
@@ -251,24 +251,51 @@ namespace cga {
         vec3f lightDir = lightPos - surfPos;
         lightDir = normalize(lightDir);
 
-        if (prd.photon.timesBounced == 0) {
-            prd.photon.color = prd.photon.color * dot(Ns, lightDir);
-        }
-
-        if (prd.photon.timesBounced >= 0) {
-            optixLaunchParams.photonArray[prd.photon.index] = prd.photon;
-        }
+        
         
         if (prd.photon.timesBounced + 1 > optixLaunchParams.numOfBounces) {
             return;
         }
         
-        float difuse = sbtData.color[0] ;
-        float specular = sbtData.specular[0];
+        float numeradorD;
+        if ((diffuseColor[0] * prd.photon.color[0]) > (diffuseColor[1] * prd.photon.color[1])) {
+            numeradorD = diffuseColor[0] * prd.photon.color[0];
+        }
+        else {
+            numeradorD = diffuseColor[1] * prd.photon.color[1];
+        }
+        if (numeradorD < (diffuseColor[2] * prd.photon.color[2])) {
+            numeradorD = diffuseColor[2] * prd.photon.color[2];
+        }
+
+        float numeradorS;
+        if ((sbtData.specular[0] * prd.photon.color[0]) > (sbtData.specular[1] * prd.photon.color[1])) {
+            numeradorS = sbtData.specular[0] * prd.photon.color[0];
+        }
+        else {
+            numeradorS = sbtData.specular[1] * prd.photon.color[1];
+        }
+        if (numeradorS < (sbtData.specular[2] * prd.photon.color[2])) {
+            numeradorS = sbtData.specular[2] * prd.photon.color[2];
+        }
+
+        float divisor;
+        if (prd.photon.color[0] > prd.photon.color[1]) {
+            divisor = prd.photon.color[0];
+        }
+        else {
+            divisor = prd.photon.color[1];
+        }
+        if (divisor < prd.photon.color[2]) {
+            divisor = prd.photon.color[2];
+        }
+
+        float Pd = numeradorD / divisor;
+        float Ps = numeradorS / divisor;
 
         float randomNum = prd.random();
  
-        if (randomNum > difuse + specular) {
+        if (randomNum > Pd + Ps) {
             // absorbido
             return;
         }
@@ -286,7 +313,10 @@ namespace cga {
         bouncedPhoton.threadId = prd.photon.threadId;
         vec3f bouncedPhotonColor = vec3f(0.f,0.f,0.f);
 
-        if (randomNum <= difuse) {
+        if (randomNum <= Pd) {
+            if (prd.photon.timesBounced >= 0) {
+                optixLaunchParams.photonArray[prd.photon.index] = prd.photon;
+            }
             // es difusa
 
             // Ns es la normal normalizada en el punto de impacto
@@ -302,20 +332,21 @@ namespace cga {
 
             //Color_difuso_resultante = Color_del_fotón * Color_de_la_superficie * (cos(theta)), donde "theta" es el ángulo entre la dirección de la luz incidente y la normal de la superficie.
             // Ns es la normal de la superfice
-            
-            
-            bouncedPhotonColor = prd.photon.color * diffuseColor * dot(Ns, lightDir);
+
+            bouncedPhotonColor = vec3f(prd.photon.color[0] * diffuseColor[0] / Pd, prd.photon.color[1] * diffuseColor[1] / Pd, prd.photon.color[2] * diffuseColor[2] / Pd) ;
+            //bouncedPhotonColor = prd.photon.color * diffuseColor * dot(Ns, lightDir);
 
             //printf("Bounced Color %f - %f - %f\n", bouncedPhotonColor.x, bouncedPhotonColor.y, bouncedPhotonColor.z);
         }
-        else if (randomNum <= difuse + specular) {
+        else if (randomNum <= Pd + Ps) {
             // es especular
+            printf("Es especular\n");
             
             bounceDir = prd.photon.dir  - 2.f * dot(prd.photon.dir, Ns) * Ns;
             vec3f cameraDir = optixLaunchParams.camera.position - surfPos;
             cameraDir = normalize(cameraDir);
             vec3f colorEspecular = sbtData.specular * dot(bounceDir, cameraDir);
-            bouncedPhotonColor = prd.photon.color * colorEspecular * dot(bounceDir, cameraDir);
+            bouncedPhotonColor = vec3f(prd.photon.color[0] * diffuseColor[0] / Ps, prd.photon.color[1] * diffuseColor[1] / Ps, prd.photon.color[2] * diffuseColor[2] / Ps);
             //printf("Bounced dir %f - %f - %f\n", surfPos.x, surfPos.y, surfPos.z);
         }
         
@@ -326,7 +357,7 @@ namespace cga {
         prd_bouced.photon = bouncedPhoton;
 
         optixTrace(optixLaunchParams.traversable,
-            surfPos + 0.1f * bounceDir,
+            surfPos + 1e-3f * bounceDir,
             bounceDir,
             0.f,    // tmin
             1e20f,  // tmax
@@ -394,9 +425,9 @@ namespace cga {
 
 
       const vec3f lightPos
-          = optixLaunchParams.light.origin
-          + prd_photon.random() * optixLaunchParams.light.du
-          + prd_photon.random() * optixLaunchParams.light.dv;
+          = optixLaunchParams.light.origin;
+          //+ prd_photon.random() * optixLaunchParams.light.du
+          //+ prd_photon.random() * optixLaunchParams.light.dv;
       
       const auto& camera = optixLaunchParams.camera;
       
@@ -414,7 +445,7 @@ namespace cga {
       for (int i = 0; i < optixLaunchParams.numOfPhotons; i++) {
           vec3f pixelColor = 0.f;
           Photon photon = Photon(lightPos.x, lightPos.y, lightPos.z, 'a', 'a', 'a', 3);
-          photon.color = vec3f(0.3f, 0.3f, 0.3f);
+          photon.color = vec3f(1.f);
           photon.index = threadId * optixLaunchParams.numOfPhotons * (optixLaunchParams.numOfBounces + 1) + i * (optixLaunchParams.numOfBounces + 1);
           photon.threadId = threadId;
           //printf("Photon index %d\n", i);
@@ -512,27 +543,28 @@ namespace cga {
                  RAY_TYPE_COUNT,               // SBT stride
                  RADIANCE_RAY_TYPE,            // missSBTIndex 
                  u0, u1 );
-      pixelColor  += prd.pixelColor;
-      // pixelNormal += prd.pixelNormal;
-      // pixelAlbedo += prd.pixelAlbedo;
+       //pixelColor  += prd.pixelColor;
+       pixelNormal += prd.pixelNormal;
+       pixelAlbedo += prd.pixelAlbedo;
     }
     // prd.position has the position on which the ray hit
     // loop the buffer and paint the pixels with the photons
 
-    vec3f photonColor = vec3f(0, 0, 0);
+    vec3f photonColor = vec3f(0.f, 0.f, 0.f);
     
-    for (int photonID = 0; photonID < 1200 * optixLaunchParams.numOfBounces * (optixLaunchParams.numOfPhotons + 1); photonID++) {
+    for (int photonID = 0; photonID < 1200 * optixLaunchParams.numOfPhotons * (optixLaunchParams.numOfBounces + 1); photonID++) {
         if (optixLaunchParams.photonArray[photonID].index > -1) {
-            if (prd.position != vec3f(0,0,0)) {
+            if (prd.position != vec3f(0.f,0.f,0.f)) {
                 vec3f diff = optixLaunchParams.photonArray[photonID].position - prd.position;
                 float xToPhoton = sqrtf(dot(diff, diff));
-                if (xToPhoton < 10) {
-                    photonColor += optixLaunchParams.photonArray[photonID].color;
+                if (xToPhoton < 3) {
+                    float wpc = 1.f;// = (1.0 - xToPhoton / 10);
+                    photonColor +=  optixLaunchParams.photonArray[photonID].color * wpc;
                 }
             }
         }
-    }
-    pixelColor = pixelColor * vec3f(0.3) + photonColor / vec3f(M_PI * 100);
+    } 
+    pixelColor = pixelColor + photonColor / vec3f(M_PI * 4/3 * 9 ) ;
     vec4f rgba(pixelColor / numPixelSamples, 1.f);
     // and write/accumulate to frame buffer ...
     if (optixLaunchParams.frame.frameID > 0) {
