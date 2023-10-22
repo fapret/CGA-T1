@@ -46,9 +46,9 @@ namespace cga {
       short flag;
       int threadId;
       vec3f dir;
-      vec3f position;
+      vec3f position = vec3f(0,0,0);
       vec3f color;
-      int index;
+      int index = -1;
       float power;
       int timesBounced;
 
@@ -84,8 +84,8 @@ namespace cga {
   struct LaunchParams
   {
     int numPixelSamples = 1;
-    int numOfPhotons = 1;
-    int numOfBounces = 1;
+    int numOfPhotons = 170;
+    int numOfBounces = 4 ;
     struct {
       int       frameID = 0;
       // the *final* frame buffer, after accum

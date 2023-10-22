@@ -307,7 +307,7 @@ namespace cga {
 
     // and re-set the camera, since aspect may have changed
     setCamera(lastSetCamera);
-    owlLaunch2D(photonEmiter, 1200, 800, launchParams);
+    owlLaunch2D(photonEmiter, 1200, 1, launchParams);
   }
 
 } // ::osc
