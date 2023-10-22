@@ -47,6 +47,10 @@ namespace cga {
       newVector.x = r * sin(theta) * cos(phi);
       newVector.y = r * sin(theta) * sin(phi);
       newVector.z = r * cos(theta);
+
+      if (dot(newVector, normalVector) < 0.0f) {
+          newVector = -newVector;
+      }
   }
 
 
@@ -227,7 +231,7 @@ namespace cga {
         }
         prd.pixelNormal = Ns;
         prd.pixelAlbedo = diffuseColor;
-        prd.pixelColor = pixelColor;
+        prd.pixelColor = diffuseColor;
     }
     else {
         // es un foton que paga en una superfice, tenemos que meterlo en el kdtree
@@ -248,7 +252,7 @@ namespace cga {
         lightDir = normalize(lightDir);
 
         if (prd.photon.timesBounced == 0) {
-            prd.photon.color = prd.photon.color; // * dot(Ns, lightDir);
+            prd.photon.color = prd.photon.color * dot(Ns, lightDir);
         }
 
         if (prd.photon.timesBounced >= 0) {
@@ -402,15 +406,15 @@ namespace cga {
 
 
       vec3f centroEscena = vec3f(-107.297424, 37.1369781, -127.297424);
-      float y_max = 410;
-      float y_min = -500;
-      float z_max = 400;
-      float z_min = -490;
+      float y_max = 580;
+      float y_min = -400;
+      float z_max = 430;
+      float z_min = -670;
 
       for (int i = 0; i < optixLaunchParams.numOfPhotons; i++) {
           vec3f pixelColor = 0.f;
           Photon photon = Photon(lightPos.x, lightPos.y, lightPos.z, 'a', 'a', 'a', 3);
-          photon.color = vec3f(1.0f, 1.0f, 1.0f);
+          photon.color = vec3f(0.3f, 0.3f, 0.3f);
           photon.index = threadId * optixLaunchParams.numOfPhotons * (optixLaunchParams.numOfBounces + 1) + i * (optixLaunchParams.numOfBounces + 1);
           photon.threadId = threadId;
           //printf("Photon index %d\n", i);
@@ -508,7 +512,7 @@ namespace cga {
                  RAY_TYPE_COUNT,               // SBT stride
                  RADIANCE_RAY_TYPE,            // missSBTIndex 
                  u0, u1 );
-      //pixelColor  += prd.pixelColor;
+      pixelColor  += prd.pixelColor;
       // pixelNormal += prd.pixelNormal;
       // pixelAlbedo += prd.pixelAlbedo;
     }
@@ -521,14 +525,14 @@ namespace cga {
         if (optixLaunchParams.photonArray[photonID].index > -1) {
             if (prd.position != vec3f(0,0,0)) {
                 vec3f diff = optixLaunchParams.photonArray[photonID].position - prd.position;
-                float squaredDistance = dot(diff, diff);
-                if (squaredDistance < 10) {
+                float xToPhoton = sqrtf(dot(diff, diff));
+                if (xToPhoton < 10) {
                     photonColor += optixLaunchParams.photonArray[photonID].color;
                 }
             }
         }
     }
-    pixelColor = pixelColor  + photonColor ;
+    pixelColor = pixelColor * vec3f(0.3) + photonColor / vec3f(M_PI * 100);
     vec4f rgba(pixelColor / numPixelSamples, 1.f);
     // and write/accumulate to frame buffer ...
     if (optixLaunchParams.frame.frameID > 0) {

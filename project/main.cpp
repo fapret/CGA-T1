@@ -124,7 +124,7 @@ namespace cga {
     try {
       Model *model = loadOBJ(inFileName);
       vec3f at = model->bounds.center() - vec3f(0, 0, 0);
-      Camera camera = { /*from*/vec3f(-1350.07f, 200.f, -140.f),
+      Camera camera = { /*from*/vec3f(-1550.07f, 200.f, -140.f),
                         /* at */model->bounds.center()-vec3f(0,0,0),
                         /* up */vec3f(0.f,1.f,0.f) };
 
@@ -138,7 +138,7 @@ namespace cga {
 
       // some simple, hard-coded light ... obviously, only works for sponza
       const float light_size = 200.f;
-      QuadLight light = { /* origin */ vec3f(-1350.07f, 200.f, -140.f),
+      QuadLight light = { /* origin */ vec3f(-1550.07f, 200.f, -140.f),
                           /* edge 1 */ vec3f(1.f*light_size,0,0),
                           /* edge 2 */ vec3f(0,0,1.f*light_size),
                           /* power */  vec3f(3000000.f) };
