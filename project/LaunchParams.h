@@ -21,6 +21,9 @@
 #include "kdtree.h"
 #include <array>
 
+#include <iostream>
+#include <fstream>
+
 namespace cga {
   using namespace owl;
 
@@ -71,6 +74,7 @@ namespace cga {
       };
       __host__ __device__ Photon(float x, float y, float z, char p, char phi, char theta, short flag)
       {
+          
           this->position = vec3f(x, y, z);
           *this->p = p;
           this->phi = phi;
@@ -86,6 +90,10 @@ namespace cga {
     int numPixelSamples = 1;
     int numOfPhotons = 170;
     int numOfBounces = 4 ;
+    int sphereRadius = 5;
+    bool photonMap = true;
+    bool rayTrace = true;
+
     struct {
       int       frameID = 0;
       // the *final* frame buffer, after accum
@@ -110,10 +118,66 @@ namespace cga {
     struct {
       vec3f origin, du, dv, power;
     } light;
-    
+
     OptixTraversableHandle traversable;
 
     Photon* photonArray;
+    LaunchParams() {
+        std::fstream my_file;
+        my_file.open("C:/Users/ferna/Documents/Facultad/GRAFA/CGA-T1/project/config.txt", std::ios::in);
+        if (!my_file) {
+            std::cout << "No such file";
+        }
+        else {
+            std::string line;
+            std::string key;
+            std::string value;
+
+            
+
+            while (std::getline(my_file, line)) {
+                // Process each line here
+                std::stringstream ss(line);
+                std::getline(ss, key, '=');
+                std::getline(ss, value);
+
+                key.erase(0, key.find_first_not_of(" "));
+                key.erase(key.find_last_not_of(" ") + 1);
+
+                value.erase(0, value.find_first_not_of(" "));
+                value.erase(value.find_last_not_of(" ") + 1);
+
+                if (key == "numOfPhotons") {
+                    numOfPhotons = std::stoi(value);
+                }
+                if (key == "numOfBounces") {
+                    numOfBounces = std::stoi(value);
+                }
+                if (key == "sphereRadius") {
+                    sphereRadius = std::stoi(value);
+                }
+                if (key == "photonMap") {
+                    if (value == "true") {
+                        photonMap = true;
+                    }
+                    else {
+                        photonMap = false;
+                    }
+                }
+                if (key == "rayTrace") {
+                    if (value == "true") {
+                        rayTrace = true;
+                    }
+                    else {
+                        rayTrace = false;
+                    }
+                }
+                std::cout << line << std::endl; // Print the line to the console as an example
+            }
+
+        }
+        my_file.close();
+    }
   
   };
 

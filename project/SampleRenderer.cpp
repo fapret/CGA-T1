@@ -19,6 +19,9 @@
 #include <string.h>
 #include <fstream>
 
+
+
+
 /*! \namespace osc - Optix Siggraph Course */
 namespace cga {
 
@@ -26,6 +29,10 @@ namespace cga {
 
   int numOfPhotons;
   int numOfBounces;
+  int sphereRadius;
+  bool photonMap;
+  bool rayTrace;
+
 
   /*! constructor - performs all setup, including initializing
     optix, creates module, pipeline, programs, SBT, etc. */
@@ -50,7 +57,6 @@ namespace cga {
                           /* no sbt data: */0,nullptr,-1);
 
     
-
     OWLVarDecl launchParamsVars[] = {
       { "world", OWL_GROUP, OWL_OFFSETOF(LaunchParams,traversable)},
 
@@ -77,6 +83,9 @@ namespace cga {
 
       { "numOfPhotons", OWL_INT, OWL_OFFSETOF(LaunchParams,numOfPhotons)},
       { "numOfBounces", OWL_INT, OWL_OFFSETOF(LaunchParams,numOfBounces)},
+      { "sphereRadius", OWL_INT, OWL_OFFSETOF(LaunchParams,sphereRadius)},
+      { "photonMap", OWL_INT, OWL_OFFSETOF(LaunchParams,photonMap)},
+      { "rayTrace", OWL_INT, OWL_OFFSETOF(LaunchParams,rayTrace)},
       { nullptr /* sentinel to mark end of list */ }
     };
 
@@ -105,6 +114,8 @@ namespace cga {
 
       { nullptr /* sentinel to mark end of list */ }
     };
+
+
     launchParams
       = owlParamsCreate(context,sizeof(LaunchParams),
                               launchParamsVars,-1);
@@ -304,10 +315,15 @@ namespace cga {
     printf("fbsize %d %d\n", fbSize.x, fbSize.y);
     owlParamsSet1i(launchParams, "numOfPhotons", params.numOfPhotons);
     owlParamsSet1i(launchParams, "numOfBounces", params.numOfBounces);
+    owlParamsSet1i(launchParams, "sphereRadius", params.sphereRadius);
+    owlParamsSet1i(launchParams, "photonMap", params.photonMap);
+    owlParamsSet1i(launchParams, "rayTrace", params.rayTrace);
 
     // and re-set the camera, since aspect may have changed
     setCamera(lastSetCamera);
-    owlLaunch2D(photonEmiter, 1200, 1, launchParams);
+    if (params.photonMap) {
+        owlLaunch2D(photonEmiter, 1200, 1, launchParams);
+    }
   }
 
 } // ::osc
