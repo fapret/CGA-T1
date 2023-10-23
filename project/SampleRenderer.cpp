@@ -89,38 +89,13 @@ namespace cga {
       { nullptr /* sentinel to mark end of list */ }
     };
 
-    OWLVarDecl launchParamsPhotonVars[] = {
-      { "world", OWL_GROUP, OWL_OFFSETOF(LaunchParams,traversable)},
-
-      { "numPixelSamples", OWL_INT,    OWL_OFFSETOF(LaunchParams,numPixelSamples)},
-
-      //{"photonArray",      OWL_RAW_POINTER,  OWL_OFFSETOF(LaunchParams, photonArray)},
-
-      { "frame.frameID", OWL_INT,    OWL_OFFSETOF(LaunchParams,frame.frameID)},
-      { "frame.fbColor",OWL_BUFPTR,OWL_OFFSETOF(LaunchParams,frame.fbColor)},
-      { "frame.fbFinal",OWL_RAW_POINTER,OWL_OFFSETOF(LaunchParams,frame.fbFinal)},
-      { "frame.fbSize",OWL_INT2,OWL_OFFSETOF(LaunchParams,frame.fbSize)},
-
-      // light settings:
-      { "light.origin",    OWL_FLOAT3, OWL_OFFSETOF(LaunchParams,light.origin)},
-      { "light.du",    OWL_FLOAT3, OWL_OFFSETOF(LaunchParams,light.du)},
-      { "light.dv",    OWL_FLOAT3, OWL_OFFSETOF(LaunchParams,light.dv)},
-      { "light.power",    OWL_FLOAT3, OWL_OFFSETOF(LaunchParams,light.power)},
-
-      { "camera.position", OWL_FLOAT3, OWL_OFFSETOF(LaunchParams,camera.position)},
-      { "camera.direction", OWL_FLOAT3, OWL_OFFSETOF(LaunchParams,camera.direction)},
-      { "camera.horizontal", OWL_FLOAT3, OWL_OFFSETOF(LaunchParams,camera.horizontal)},
-      { "camera.vertical", OWL_FLOAT3, OWL_OFFSETOF(LaunchParams,camera.vertical)},
-
-      { nullptr /* sentinel to mark end of list */ }
-    };
+    
 
 
     launchParams
       = owlParamsCreate(context,sizeof(LaunchParams),
                               launchParamsVars,-1);
 
-    launchParamsPhoton = owlParamsCreate(context, sizeof(LaunchParams), launchParamsPhotonVars, -1);
     
     
 
@@ -136,10 +111,7 @@ namespace cga {
     owlParamsSet3f(launchParams,"light.dv",    (const owl3f&)light.dv);
     owlParamsSet3f(launchParams,"light.power", (const owl3f&)light.power);
 
-    owlParamsSet3f(launchParamsPhoton, "light.origin", (const owl3f&)light.origin);
-    owlParamsSet3f(launchParamsPhoton, "light.du", (const owl3f&)light.du);
-    owlParamsSet3f(launchParamsPhoton, "light.dv", (const owl3f&)light.dv);
-    owlParamsSet3f(launchParamsPhoton, "light.power", (const owl3f&)light.power);
+
   }
 
   void SampleRenderer::createTextures()
@@ -244,7 +216,6 @@ namespace cga {
     owlInstanceGroupSetChild(world,0,triGroup);
     owlGroupBuildAccel(world);
     owlParamsSetGroup(launchParams,"world",world);
-    owlParamsSetGroup(launchParamsPhoton, "world", world);
   }
 
   /*! render one frame */

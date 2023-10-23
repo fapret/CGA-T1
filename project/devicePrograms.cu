@@ -340,7 +340,6 @@ namespace cga {
         }
         else if (randomNum <= Pd + Ps) {
             // es especular
-            printf("Es especular\n");
             
             bounceDir = prd.photon.dir  - 2.f * dot(prd.photon.dir, Ns) * Ns;
             vec3f cameraDir = optixLaunchParams.camera.position - surfPos;
@@ -543,7 +542,7 @@ namespace cga {
                  RAY_TYPE_COUNT,               // SBT stride
                  RADIANCE_RAY_TYPE,            // missSBTIndex 
                  u0, u1 );
-       //pixelColor  += prd.pixelColor;
+       pixelColor  += prd.pixelColor;
        pixelNormal += prd.pixelNormal;
        pixelAlbedo += prd.pixelAlbedo;
     }
@@ -551,20 +550,27 @@ namespace cga {
     // loop the buffer and paint the pixels with the photons
 
     vec3f photonColor = vec3f(0.f, 0.f, 0.f);
-    
-    for (int photonID = 0; photonID < 1200 * optixLaunchParams.numOfPhotons * (optixLaunchParams.numOfBounces + 1); photonID++) {
-        if (optixLaunchParams.photonArray[photonID].index > -1) {
-            if (prd.position != vec3f(0.f,0.f,0.f)) {
-                vec3f diff = optixLaunchParams.photonArray[photonID].position - prd.position;
-                float xToPhoton = sqrtf(dot(diff, diff));
-                if (xToPhoton < 3) {
-                    float wpc = 1.f;// = (1.0 - xToPhoton / 10);
-                    photonColor +=  optixLaunchParams.photonArray[photonID].color * wpc;
+
+    if (!optixLaunchParams.rayTrace) {
+        pixelColor = vec3f(0.f, 0.f, 0.f);
+    }
+
+    if (optixLaunchParams.photonMap) {
+        for (int photonID = 0; photonID < 1200 * optixLaunchParams.numOfPhotons * (optixLaunchParams.numOfBounces + 1); photonID++) {
+            if (optixLaunchParams.photonArray[photonID].index > -1) {
+                if (prd.position != vec3f(0.f, 0.f, 0.f)) {
+                    vec3f diff = optixLaunchParams.photonArray[photonID].position - prd.position;
+                    float xToPhoton = sqrtf(dot(diff, diff));
+                    if (xToPhoton < optixLaunchParams.sphereRadius) {
+                        float wpc = 1.f;// = (1.0 - xToPhoton / 10);
+                        photonColor += optixLaunchParams.photonArray[photonID].color * wpc;
+                    }
                 }
             }
         }
-    } 
-    pixelColor = pixelColor + photonColor / vec3f(M_PI * 4/3 * 9 ) ;
+    }
+    
+    pixelColor = pixelColor + photonColor / vec3f(M_PI * 4/3 * (optixLaunchParams.sphereRadius * optixLaunchParams.sphereRadius)) ;
     vec4f rgba(pixelColor / numPixelSamples, 1.f);
     // and write/accumulate to frame buffer ...
     if (optixLaunchParams.frame.frameID > 0) {

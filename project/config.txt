@@ -1,0 +1,5 @@
+numOfPhotons = 170
+numOfBounces = 4
+sphereRadius = 2
+photonMap = false
+rayTrace = true

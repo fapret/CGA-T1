@@ -21,6 +21,9 @@
 #include <GL/gl.h>
 #include "kdtree.h"
 #include <array>
+#include <iostream>
+#include <chrono>
+#include <ctime>
 
 /*! \namespace osc - Optix Siggraph Course */
 namespace cga {
@@ -89,6 +92,14 @@ namespace cga {
                   << sample.numPixelSamples << std::endl;
         return;
       }
+      if (key == 'p') {
+          auto currentTime = std::chrono::system_clock::now();
+          std::time_t time = std::chrono::system_clock::to_time_t(currentTime);
+          char timeStr[100];
+          std::strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H-%M-%S.png", std::localtime(&time));
+          OWLViewer::screenShot(timeStr);
+      }
+
       OWLViewer::key(key,where);
     }
     
@@ -110,7 +121,7 @@ namespace cga {
 #else
       // on windows, visual studio creates _two_ levels of build dir
       // (x86/Release)
-      "../../models/scene.obj"
+      "../../scene.obj"
 #endif
 #else
       // on linux, common practice is to have ONE level of build dir

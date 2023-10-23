@@ -124,7 +124,26 @@ namespace cga {
     Photon* photonArray;
     LaunchParams() {
         std::fstream my_file;
-        my_file.open("C:/Users/ferna/Documents/Facultad/GRAFA/CGA-T1/project/config.txt", std::ios::in);
+      
+        std::string configFile =
+#ifdef _WIN32
+#ifdef OWL_BUILDING_ALL_SAMPLES
+            // on windows, when building the whole project (including the
+            // samples) with VS, the executable's location is different
+            "../../project/config.txt"
+#else
+            // on windows, visual studio creates _two_ levels of build dir
+            // (x86/Release)
+            "../../config.txt"
+#endif
+#else
+            // on linux, common practice is to have ONE level of build dir
+            // (say, <project>/build/)...
+            "./config.txt"
+            //      "../models/sponza.obj"
+#endif
+            ;
+        my_file.open(configFile, std::ios::in);
         if (!my_file) {
             std::cout << "No such file";
         }
