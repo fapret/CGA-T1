@@ -32,6 +32,8 @@ using namespace cga;
 namespace cga {
 
   typedef owl::common::LCG<16> Random;
+
+  __device__ int photonCount;
   
   /*! launch parameters in constant memory, filled in by optix upon
       optixLaunch (this gets filled in from the buffer we pass to
@@ -307,15 +309,20 @@ namespace cga {
         vec3f bounceDir = vec3f(0, 0, 0);
 
         Photon bouncedPhoton = Photon();
-        bouncedPhoton.index = prd.photon.index + 1;
         bouncedPhoton.timesBounced = prd.photon.timesBounced + 1;
         
         bouncedPhoton.threadId = prd.photon.threadId;
         vec3f bouncedPhotonColor = vec3f(0.f,0.f,0.f);
 
         if (randomNum <= Pd) {
-            if (prd.photon.timesBounced >= 0) {
-                optixLaunchParams.photonArray[prd.photon.index] = prd.photon;
+            int index = atomicAdd(&photonCount, 1);
+            if (prd.photon.timesBounced >= 0 && index < 5000000) {
+                //printf("%d\n", index);
+                prd.photon.index = index;
+                optixLaunchParams.photonArray[index] = prd.photon;
+            }
+            else {
+                return;
             }
             // es difusa
 
@@ -445,7 +452,6 @@ namespace cga {
           vec3f pixelColor = 0.f;
           Photon photon = Photon(lightPos.x, lightPos.y, lightPos.z, 'a', 'a', 'a', 3);
           photon.color = vec3f(1.f);
-          photon.index = threadId * optixLaunchParams.numOfPhotons * (optixLaunchParams.numOfBounces + 1) + i * (optixLaunchParams.numOfBounces + 1);
           photon.threadId = threadId;
           //printf("Photon index %d\n", i);
           photon.timesBounced = 0;
@@ -555,7 +561,7 @@ namespace cga {
     }
 
     if (optixLaunchParams.photonMap) {
-        for (int photonID = 0; photonID < 1200 * optixLaunchParams.numOfPhotons * (optixLaunchParams.numOfBounces + 1); photonID++) {
+        for (int photonID = 0; photonID < 5000000; photonID++) {
             if (optixLaunchParams.photonArray[photonID].index > -1) {
                 if (prd.position != vec3f(0.f, 0.f, 0.f)) {
                     vec3f diff = optixLaunchParams.photonArray[photonID].position - prd.position;

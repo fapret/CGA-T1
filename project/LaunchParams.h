@@ -93,7 +93,7 @@ namespace cga {
     int sphereRadius = 5;
     bool photonMap = true;
     bool rayTrace = true;
-    
+    int maxPhotons = 0;
 
     struct {
       int       frameID = 0;

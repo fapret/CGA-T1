@@ -30,6 +30,7 @@ namespace cga {
   int numOfPhotons;
   int numOfBounces;
   int sphereRadius;
+  int maxPhotons;
   bool photonMap;
   bool rayTrace;
 
@@ -61,6 +62,7 @@ namespace cga {
       { "world", OWL_GROUP, OWL_OFFSETOF(LaunchParams,traversable)},
 
       { "numPixelSamples", OWL_INT,    OWL_OFFSETOF(LaunchParams,numPixelSamples)},
+      { "maxPhotons", OWL_INT,    OWL_OFFSETOF(LaunchParams,maxPhotons)},
 
       { "photonArray",OWL_BUFPTR,OWL_OFFSETOF(LaunchParams,photonArray)},
 
@@ -270,8 +272,7 @@ namespace cga {
     this->fbSize = newSize;
     fbColor = owlDeviceBufferCreate(context,OWL_FLOAT4,fbSize.x*fbSize.y,nullptr);
     LaunchParams params;
-    int size = 1200 * 800 * params.numOfPhotons * params.numOfBounces;
-    photonArray = owlDeviceBufferCreate(context, OWL_FLOAT4, 4000000, nullptr);
+    photonArray = owlDeviceBufferCreate(context, OWL_FLOAT4, 5000000 * sizeof(Photon), nullptr);
 
     owlParamsSetBuffer(launchParams,"frame.fbColor",fbColor);
     owlParamsSetBuffer(launchParams, "photonArray", photonArray);
@@ -279,6 +280,7 @@ namespace cga {
     owlParamsSet2i(launchParams,"frame.fbSize",(const owl2i&)fbSize);
     printf("fbsize %d %d\n", fbSize.x, fbSize.y);
     owlParamsSet1i(launchParams, "numOfPhotons", params.numOfPhotons);
+    owlParamsSet1i(launchParams, "maxPhotons", params.maxPhotons);
     owlParamsSet1i(launchParams, "numOfBounces", params.numOfBounces);
     owlParamsSet1i(launchParams, "sphereRadius", params.sphereRadius);
     owlParamsSet1i(launchParams, "photonMap", params.photonMap);
