@@ -89,15 +89,9 @@ namespace cga {
       { nullptr /* sentinel to mark end of list */ }
     };
 
-    
-
-
     launchParams
       = owlParamsCreate(context,sizeof(LaunchParams),
                               launchParamsVars,-1);
-
-    
-    
 
     createTextures();
     buildAccel();

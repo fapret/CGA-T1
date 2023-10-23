@@ -68,30 +68,6 @@ namespace cga {
 
     void key(char key, const vec2i &where) override
     {
-      if (key == 'D' || key == ' ') {
-        sample.denoiserOn = !sample.denoiserOn;
-        std::cout << "denoising now " << (sample.denoiserOn?"ON":"OFF") << std::endl;
-        return;
-      }
-      if (key == 'A') {
-        sample.accumulate = !sample.accumulate;
-        std::cout << "accumulation/progressive refinement now " << (sample.accumulate?"ON":"OFF") << std::endl;
-        return;
-      }
-      if (key == ',') {
-        sample.numPixelSamples
-          = std::max(1,sample.numPixelSamples-1);
-        std::cout << "num samples/pixel now "
-                  << sample.numPixelSamples << std::endl;
-        return;
-      }
-      if (key == '.') {
-        sample.numPixelSamples
-          = std::max(1,sample.numPixelSamples+1);
-        std::cout << "num samples/pixel now "
-                  << sample.numPixelSamples << std::endl;
-        return;
-      }
       if (key == 'p') {
           auto currentTime = std::chrono::system_clock::now();
           std::time_t time = std::chrono::system_clock::to_time_t(currentTime);
@@ -117,7 +93,7 @@ namespace cga {
 #ifdef OWL_BUILDING_ALL_SAMPLES
       // on windows, when building the whole project (including the
       // samples) with VS, the executable's location is different
-      "../../project/scene.obj"
+      "./scene.obj"
 #else
       // on windows, visual studio creates _two_ levels of build dir
       // (x86/Release)

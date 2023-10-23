@@ -494,7 +494,6 @@ namespace cga {
     const int ix = optixGetLaunchIndex().x;
     const int iy = optixGetLaunchIndex().y;
 
-
     const auto &camera = optixLaunchParams.camera;
     const uint32_t fbIndex = ix+iy*optixLaunchParams.frame.fbSize.x;
 
@@ -581,6 +580,7 @@ namespace cga {
     }
     optixLaunchParams.frame.fbColor[fbIndex] = (float4)rgba;
     optixLaunchParams.frame.fbFinal[fbIndex] = owl::make_rgba(rgba);
+
   }
   
 } // ::osc

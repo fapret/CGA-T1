@@ -93,6 +93,7 @@ namespace cga {
     int sphereRadius = 5;
     bool photonMap = true;
     bool rayTrace = true;
+    
 
     struct {
       int       frameID = 0;
@@ -130,7 +131,7 @@ namespace cga {
 #ifdef OWL_BUILDING_ALL_SAMPLES
             // on windows, when building the whole project (including the
             // samples) with VS, the executable's location is different
-            "../../project/config.txt"
+            "./config.txt"
 #else
             // on windows, visual studio creates _two_ levels of build dir
             // (x86/Release)
