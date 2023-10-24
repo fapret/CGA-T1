@@ -316,7 +316,7 @@ namespace cga {
 
         if (randomNum <= Pd) {
             int index = atomicAdd(&photonCount, 1);
-            if (prd.photon.timesBounced >= 0 && index < 5000000) {
+            if (prd.photon.timesBounced >= 0 && index < optixLaunchParams.maxPhotons) {
                 //printf("%d\n", index);
                 prd.photon.index = index;
                 optixLaunchParams.photonArray[index] = prd.photon;
@@ -561,7 +561,7 @@ namespace cga {
     }
 
     if (optixLaunchParams.photonMap) {
-        for (int photonID = 0; photonID < 5000000; photonID++) {
+        for (int photonID = 0; photonID < optixLaunchParams.maxPhotons; photonID++) {
             if (optixLaunchParams.photonArray[photonID].index > -1) {
                 if (prd.position != vec3f(0.f, 0.f, 0.f)) {
                     vec3f diff = optixLaunchParams.photonArray[photonID].position - prd.position;

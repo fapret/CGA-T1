@@ -192,6 +192,9 @@ namespace cga {
                         rayTrace = false;
                     }
                 }
+                if (key == "maxPhotons") {
+                    maxPhotons = std::stoi(value);
+                }
                 std::cout << line << std::endl; // Print the line to the console as an example
             }
 

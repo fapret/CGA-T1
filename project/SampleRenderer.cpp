@@ -272,7 +272,7 @@ namespace cga {
     this->fbSize = newSize;
     fbColor = owlDeviceBufferCreate(context,OWL_FLOAT4,fbSize.x*fbSize.y,nullptr);
     LaunchParams params;
-    photonArray = owlDeviceBufferCreate(context, OWL_FLOAT4, 5000000 * sizeof(Photon), nullptr);
+    photonArray = owlDeviceBufferCreate(context, OWL_FLOAT4, params.maxPhotons * sizeof(Photon), nullptr);
 
     owlParamsSetBuffer(launchParams,"frame.fbColor",fbColor);
     owlParamsSetBuffer(launchParams, "photonArray", photonArray);
