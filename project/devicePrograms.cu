@@ -255,7 +255,7 @@ namespace cga {
 
         
         
-        if (prd.photon.timesBounced + 1 > optixLaunchParams.numOfBounces) {
+        if (prd.photon.timesBounced - 1 > optixLaunchParams.numOfBounces) {
             return;
         }
         
@@ -315,15 +315,13 @@ namespace cga {
         vec3f bouncedPhotonColor = vec3f(0.f,0.f,0.f);
 
         if (randomNum <= Pd) {
+
             int index = atomicAdd(&photonCount, 1);
-            if (prd.photon.timesBounced >= 0 && index < optixLaunchParams.maxPhotons) {
-                //printf("%d\n", index);
+            if (prd.photon.timesBounced > 0 && index < optixLaunchParams.maxPhotons) {
                 prd.photon.index = index;
                 optixLaunchParams.photonArray[index] = prd.photon;
             }
-            else {
-                return;
-            }
+
             // es difusa
 
             // Ns es la normal normalizada en el punto de impacto
@@ -334,6 +332,8 @@ namespace cga {
 
             float alpha_rad = alpha * M_PI / 180.0;
             float phi_rad = phi * M_PI / 180.0;
+
+
 
             calculateNewVector(Ns, alpha_rad, phi_rad, bounceDir);
 
@@ -432,8 +432,8 @@ namespace cga {
 
       const vec3f lightPos
           = optixLaunchParams.light.origin;
-          //+ prd_photon.random() * optixLaunchParams.light.du
-          //+ prd_photon.random() * optixLaunchParams.light.dv;
+          + prd_photon.random() * optixLaunchParams.light.du
+          + prd_photon.random() * optixLaunchParams.light.dv;
       
       const auto& camera = optixLaunchParams.camera;
       
@@ -442,34 +442,32 @@ namespace cga {
           / vec2f(optixLaunchParams.frame.fbSize));
 
 
-      vec3f centroEscena = vec3f(-107.297424, 37.1369781, -127.297424);
-      float y_max = 580;
-      float y_min = -400;
-      float z_max = 430;
-      float z_min = -670;
+      vec3f centroEscena = vec3f(0.0f, 2.5f, 0.f);
+      float y_max = 20.0f;
+      float y_min = -20.0f;
+      float z_max = 20.0f;
+      float z_min = -20.0;
+
+      
 
       for (int i = 0; i < optixLaunchParams.numOfPhotons; i++) {
           vec3f pixelColor = 0.f;
           Photon photon = Photon(lightPos.x, lightPos.y, lightPos.z, 'a', 'a', 'a', 3);
           photon.color = vec3f(1.f);
           photon.threadId = threadId;
-          //printf("Photon index %d\n", i);
           photon.timesBounced = 0;
 
+          float coord_polar = prd_photon.random() * (M_PI / 2);
+          float coord_azimutal = prd_photon.random() * (M_PI * 2);
 
-          float y = (prd_photon.random() * (y_max - y_min)) + y_min;
-          float z = (prd_photon.random() * (z_max - z_min)) + z_min;
+          float x = sin(coord_polar) * cos(coord_azimutal);
+          float z = sin(coord_polar) * sin(coord_azimutal); 
+          float y = cos(coord_polar);
 
-          vec3f offset = vec3f(0, y, z);
+          vec3f puntoEsfera = vec3f(x, y, z);
 
-          vec3f rayDir = centroEscena + offset - lightPos;
+          vec3f rayDir = puntoEsfera - lightPos;
           rayDir = normalize(rayDir);
-
-
-          
-          //vec3f rayDir = normalize(camera.direction
-          //    + (screen.x - 0.5f) * camera.horizontal
-          //    + (screen.y - 0.5f) * camera.vertical);
 
           photon.dir = rayDir;
           prd_photon.photon = photon;
@@ -567,15 +565,16 @@ namespace cga {
                     vec3f diff = optixLaunchParams.photonArray[photonID].position - prd.position;
                     float xToPhoton = sqrtf(dot(diff, diff));
                     if (xToPhoton < optixLaunchParams.sphereRadius) {
-                        float wpc = 1.f;// = (1.0 - xToPhoton / 10);
+                        float wpc =  (1.0 - xToPhoton / optixLaunchParams.sphereRadius);
                         photonColor += optixLaunchParams.photonArray[photonID].color * wpc;
                     }
                 }
             }
         }
     }
+
     
-    pixelColor = pixelColor + photonColor / vec3f(M_PI * 4/3 * (optixLaunchParams.sphereRadius * optixLaunchParams.sphereRadius)) ;
+    pixelColor = pixelColor + (photonColor * 0.01f / vec3f(M_PI * 4 / 3 * (optixLaunchParams.sphereRadius * optixLaunchParams.sphereRadius)) *(1 - 2 / (3 * optixLaunchParams.sphereRadius)));
     vec4f rgba(pixelColor / numPixelSamples, 1.f);
     // and write/accumulate to frame buffer ...
     if (optixLaunchParams.frame.frameID > 0) {

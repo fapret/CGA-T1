@@ -93,7 +93,8 @@ namespace cga {
 #ifdef OWL_BUILDING_ALL_SAMPLES
       // on windows, when building the whole project (including the
       // samples) with VS, the executable's location is different
-      "./scene.obj"
+      // ../../project/scene.obj en visual, ./scene.obj para debug
+      "../../project/cornell-box.obj"
 #else
       // on windows, visual studio creates _two_ levels of build dir
       // (x86/Release)
@@ -110,9 +111,10 @@ namespace cga {
       inFileName = av[1];
     try {
       Model *model = loadOBJ(inFileName);
-      vec3f at = model->bounds.center() - vec3f(0, 0, 0);
-      Camera camera = { /*from*/vec3f(-1550.07f, 200.f, -140.f),
-                        /* at */model->bounds.center()-vec3f(0,0,0),
+      vec3f from = model->bounds.center() + vec3f(0, 0, 12);
+      vec3f at = model->bounds.center();
+      Camera camera = { /*from*/from,
+                        /* at */at,
                         /* up */vec3f(0.f,1.f,0.f) };
 
 
@@ -124,11 +126,12 @@ namespace cga {
       //kdt::KDTree<photon> kdtree(points);
 
       // some simple, hard-coded light ... obviously, only works for sponza
-      const float light_size = 200.f;
-      QuadLight light = { /* origin */ vec3f(-1550.07f, 200.f, -140.f),
+      const float light_size = 0.f;
+      vec3f upper = model->bounds.upper;
+      QuadLight light = { /* origin */ model->bounds.center() + vec3f(0.f,upper.y - model->bounds.center().y -0.3f,0.f),
                           /* edge 1 */ vec3f(1.f*light_size,0,0),
-                          /* edge 2 */ vec3f(0,0,1.f*light_size),
-                          /* power */  vec3f(3000000.f) };
+                          /* edge 2 */ vec3f(0,0,1.f * light_size),
+                          /* power */  vec3f(10.f) };
                       
       // something approximating the scale of the world, so the
       // camera knows how much to move for any given user interaction:

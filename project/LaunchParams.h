@@ -94,6 +94,7 @@ namespace cga {
     bool photonMap = true;
     bool rayTrace = true;
     int maxPhotons = 0;
+    float alpha_val = 1.f;
 
     struct {
       int       frameID = 0;
@@ -131,7 +132,8 @@ namespace cga {
 #ifdef OWL_BUILDING_ALL_SAMPLES
             // on windows, when building the whole project (including the
             // samples) with VS, the executable's location is different
-            "./config.txt"
+            // ../../project/config.txt en visual, ./config.txt para debug
+            "../../project/config.txt"
 #else
             // on windows, visual studio creates _two_ levels of build dir
             // (x86/Release)
@@ -194,6 +196,9 @@ namespace cga {
                 }
                 if (key == "maxPhotons") {
                     maxPhotons = std::stoi(value);
+                }
+                if (key == "alpha") {
+                    alpha_val = std::stoi(value);
                 }
                 std::cout << line << std::endl; // Print the line to the console as an example
             }

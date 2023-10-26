@@ -33,6 +33,7 @@ namespace cga {
   int maxPhotons;
   bool photonMap;
   bool rayTrace;
+  float alpha_val;
 
 
   /*! constructor - performs all setup, including initializing
@@ -88,6 +89,7 @@ namespace cga {
       { "sphereRadius", OWL_INT, OWL_OFFSETOF(LaunchParams,sphereRadius)},
       { "photonMap", OWL_INT, OWL_OFFSETOF(LaunchParams,photonMap)},
       { "rayTrace", OWL_INT, OWL_OFFSETOF(LaunchParams,rayTrace)},
+      { "alpha_val", OWL_INT, OWL_OFFSETOF(LaunchParams,alpha_val)},
       { nullptr /* sentinel to mark end of list */ }
     };
 
@@ -285,6 +287,7 @@ namespace cga {
     owlParamsSet1i(launchParams, "sphereRadius", params.sphereRadius);
     owlParamsSet1i(launchParams, "photonMap", params.photonMap);
     owlParamsSet1i(launchParams, "rayTrace", params.rayTrace);
+    owlParamsSet1i(launchParams, "alpha_val", params.alpha_val);
 
     // and re-set the camera, since aspect may have changed
     setCamera(lastSetCamera);
