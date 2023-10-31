@@ -432,23 +432,14 @@ namespace cga {
 
       const vec3f lightPos
           = optixLaunchParams.light.origin;
-          + prd_photon.random() * optixLaunchParams.light.du
-          + prd_photon.random() * optixLaunchParams.light.dv;
+          //+ prd_photon.random() * optixLaunchParams.light.du
+          //+ prd_photon.random() * optixLaunchParams.light.dv;
       
       const auto& camera = optixLaunchParams.camera;
       
 
       vec2f screen(vec2f(ix + prd_photon.random(), iy + prd_photon.random())
           / vec2f(optixLaunchParams.frame.fbSize));
-
-
-      vec3f centroEscena = vec3f(0.0f, 2.5f, 0.f);
-      float y_max = 20.0f;
-      float y_min = -20.0f;
-      float z_max = 20.0f;
-      float z_min = -20.0;
-
-      
 
       for (int i = 0; i < optixLaunchParams.numOfPhotons; i++) {
           vec3f pixelColor = 0.f;
@@ -457,12 +448,12 @@ namespace cga {
           photon.threadId = threadId;
           photon.timesBounced = 0;
 
-          float coord_polar = prd_photon.random() * (M_PI / 2);
-          float coord_azimutal = prd_photon.random() * (M_PI * 2);
+          float tita = prd_photon.random() * (M_PI);
+          float phi = prd_photon.random() * (M_PI * 2.0f);
 
-          float x = sin(coord_polar) * cos(coord_azimutal);
-          float z = sin(coord_polar) * sin(coord_azimutal); 
-          float y = cos(coord_polar);
+          float x = sin(phi) * cos(tita) + lightPos.x;
+          float y = sin(tita) * sin(phi) + lightPos.y;
+          float z = cos(phi) + lightPos.z;
 
           vec3f puntoEsfera = vec3f(x, y, z);
 
@@ -574,7 +565,7 @@ namespace cga {
     }
 
     
-    pixelColor = pixelColor + (photonColor * 0.01f / vec3f(M_PI * 4 / 3 * (optixLaunchParams.sphereRadius * optixLaunchParams.sphereRadius)) *(1 - 2 / (3 * optixLaunchParams.sphereRadius)));
+    pixelColor = pixelColor + (photonColor * 0.0005f / vec3f(M_PI * 4 / 3 * (optixLaunchParams.sphereRadius * optixLaunchParams.sphereRadius)) *(1 - 2 / (3 * optixLaunchParams.sphereRadius)));
     vec4f rgba(pixelColor / numPixelSamples, 1.f);
     // and write/accumulate to frame buffer ...
     if (optixLaunchParams.frame.frameID > 0) {

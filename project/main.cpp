@@ -128,7 +128,7 @@ namespace cga {
       // some simple, hard-coded light ... obviously, only works for sponza
       const float light_size = 0.f;
       vec3f upper = model->bounds.upper;
-      QuadLight light = { /* origin */ model->bounds.center() + vec3f(0.f,upper.y - model->bounds.center().y -0.3f,0.f),
+      QuadLight light = { /* origin */ model->bounds.center() + vec3f(0.f,upper.y - model->bounds.center().y - 1.3f,0.f),  //model->bounds.center() + vec3f(0.f,upper.y - model->bounds.center().y -1.3f,0.f),
                           /* edge 1 */ vec3f(1.f*light_size,0,0),
                           /* edge 2 */ vec3f(0,0,1.f * light_size),
                           /* power */  vec3f(10.f) };

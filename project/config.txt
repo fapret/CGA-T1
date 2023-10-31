@@ -1,7 +1,7 @@
 numOfPhotons = 200
-numOfBounces = 4
-sphereRadius = 3
+numOfBounces = 2
+sphereRadius = 2
 photonMap = true
-rayTrace = false
+rayTrace = true
 maxPhotons = 960000
 alpha = 6.0
