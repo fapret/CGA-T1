@@ -94,7 +94,7 @@ namespace cga {
       // on windows, when building the whole project (including the
       // samples) with VS, the executable's location is different
       // ../../project/scene.obj en visual, ./scene.obj para debug
-      "../../project/cornell-box.obj"
+      "./cornell-box.obj"
 #else
       // on windows, visual studio creates _two_ levels of build dir
       // (x86/Release)

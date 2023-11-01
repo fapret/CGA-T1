@@ -133,7 +133,7 @@ namespace cga {
             // on windows, when building the whole project (including the
             // samples) with VS, the executable's location is different
             // ../../project/config.txt en visual, ./config.txt para debug
-            "../../project/config.txt"
+            "./config.txt"
 #else
             // on windows, visual studio creates _two_ levels of build dir
             // (x86/Release)
